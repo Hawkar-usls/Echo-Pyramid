@@ -2,8 +2,8 @@
 """Compose canonical JANUS Pyramid swarm firmware with Pyramid Language v0.3.
 
 The default physical voice operator is the current The-Voice-of-Janus
-117-121 Hz anchored space. This tool is fail-closed: source drift and console
-ownership conflicts must be reviewed instead of guessed.
+117-121 Hz anchored space. This tool is fail-closed: source drift, console
+ownership conflicts, and real-time audio budget overruns are handled explicitly.
 """
 
 from __future__ import annotations
@@ -46,22 +46,66 @@ def runtime_block(*, usb_control: bool) -> str:
 #define JANUS_PYRAMID_LANGUAGE_AMOUNT 100
 #endif
 
+#ifndef JANUS_PYRAMID_DSP_FAILSAFE
+#define JANUS_PYRAMID_DSP_FAILSAFE 1
+#endif
+
+#ifndef JANUS_PYRAMID_DSP_OVER_BUDGET_TRIP
+#define JANUS_PYRAMID_DSP_OVER_BUDGET_TRIP 3
+#endif
+
 JanusPyramid117121DSP janusVoiceDsp;
 volatile uint32_t janusVoiceBlocks = 0;
 volatile uint32_t janusVoiceFramesL32 = 0;
 volatile uint32_t janusVoiceProcessUsEma = 0;
 volatile uint32_t janusVoiceProcessUsPeakWindow = 0;
+volatile bool janusVoiceBudgetTrip = false;
+volatile uint8_t janusVoiceOverBudgetStreak = 0;
+volatile uint32_t janusVoiceFailsafeTrips = 0;
 
 static void janusVoiceProcessChunk(int16_t* pcm, uint16_t frames) {
+  janusVoiceBlocks++;
+  janusVoiceFramesL32 += frames;
+
+  // Once the real-time guard trips, leave the queued source PCM untouched.
+  // The main loop performs the one-time state reset outside this audio task.
+  if (janusVoiceBudgetTrip || !janusVoiceDsp.enabled() || !pcm || frames == 0) return;
+
+  const uint32_t budgetUs =
+      ((uint32_t)frames * 1000000UL) / (uint32_t)EP_SAMPLE_RATE;
   const uint32_t started = micros();
   janusVoiceDsp.processInPlace(pcm, frames);
   const uint32_t elapsed = micros() - started;
 
-  janusVoiceBlocks++;
-  janusVoiceFramesL32 += frames;
   if (janusVoiceProcessUsEma == 0) janusVoiceProcessUsEma = elapsed;
   else janusVoiceProcessUsEma = (janusVoiceProcessUsEma * 7U + elapsed) / 8U;
   if (elapsed > janusVoiceProcessUsPeakWindow) janusVoiceProcessUsPeakWindow = elapsed;
+
+#if JANUS_PYRAMID_DSP_FAILSAFE
+  if (budgetUs > 0 && elapsed >= budgetUs) {
+    if (janusVoiceOverBudgetStreak < 255U) janusVoiceOverBudgetStreak++;
+    if (janusVoiceOverBudgetStreak >= JANUS_PYRAMID_DSP_OVER_BUDGET_TRIP) {
+      janusVoiceBudgetTrip = true;
+      janusVoiceFailsafeTrips++;
+      janusVoiceOverBudgetStreak = 0;
+    }
+  } else {
+    janusVoiceOverBudgetStreak = 0;
+  }
+#endif
+}
+
+static void janusVoiceSafetyTick() {
+#if JANUS_PYRAMID_DSP_FAILSAFE
+  if (janusVoiceBudgetTrip && janusVoiceDsp.enabled()) {
+    // Reset resonator/delay state outside the audio playback task. Future chunks
+    // remain dry until an explicit local PYR=ON or a reboot clears the trip.
+    janusVoiceDsp.setEnabled(false);
+    Serial.printf("PYRAMID_LANGUAGE_FAILSAFE | DRY_BYPASS reason=DSP_OVER_BUDGET trips=%lu peak_us=%lu\n",
+                  (unsigned long)janusVoiceFailsafeTrips,
+                  (unsigned long)janusVoiceProcessUsPeakWindow);
+  }
+#endif
 }
 '''
 
@@ -70,10 +114,12 @@ char janusVoiceSerialBuf[24] = {0};
 uint8_t janusVoiceSerialLen = 0;
 
 static void janusVoicePrintControlState(const char* reason) {
-  Serial.printf("PYRAMID_LANGUAGE_CONTROL | %s enabled=%d depth=%u%% profile=%s\n",
+  Serial.printf("PYRAMID_LANGUAGE_CONTROL | %s enabled=%d depth=%u%% failsafe=%d trips=%lu profile=%s\n",
                 reason ? reason : "STATE",
                 janusVoiceDsp.enabled() ? 1 : 0,
                 (unsigned)janusVoiceDsp.targetAmountPercent(),
+                janusVoiceBudgetTrip ? 1 : 0,
+                (unsigned long)janusVoiceFailsafeTrips,
                 janus_pyramid_117121::kProfileId);
 }
 
@@ -90,8 +136,12 @@ static void janusVoiceApplySerialCommand(const char* cmd) {
     return;
   }
   if (strcmp(cmd, "PYR=ON") == 0) {
+    janusVoiceBudgetTrip = false;
+    janusVoiceOverBudgetStreak = 0;
+    janusVoiceProcessUsEma = 0;
+    janusVoiceProcessUsPeakWindow = 0;
     janusVoiceDsp.setEnabled(true);
-    janusVoicePrintControlState("ENABLED");
+    janusVoicePrintControlState("ENABLED_FAILSAFE_CLEARED");
     return;
   }
   if (strncmp(cmd, "PYR=", 4) == 0) {
@@ -145,9 +195,11 @@ static void janusVoiceStatusTick() {
   janusVoiceProcessUsPeakWindow = 0;
   const uint32_t loadPct = budgetUs ? (emaUs * 100UL) / budgetUs : 0;
 
-  Serial.printf("PYRAMID_LANGUAGE | enabled=%d depth=%u%% anchor=117/119/121Hz blocks=%lu frames_l32=%lu dsp_ema_us=%lu dsp_peak_us=%lu budget_us=%lu dsp_load=%lu%% delay_bytes=%u heap=%lu\n",
+  Serial.printf("PYRAMID_LANGUAGE | enabled=%d depth=%u%% failsafe=%d trips=%lu anchor=117/119/121Hz blocks=%lu frames_l32=%lu dsp_ema_us=%lu dsp_peak_us=%lu budget_us=%lu dsp_load=%lu%% delay_bytes=%u heap=%lu\n",
                 janusVoiceDsp.enabled() ? 1 : 0,
                 (unsigned)janusVoiceDsp.targetAmountPercent(),
+                janusVoiceBudgetTrip ? 1 : 0,
+                (unsigned long)janusVoiceFailsafeTrips,
                 (unsigned long)janusVoiceBlocks,
                 (unsigned long)janusVoiceFramesL32,
                 (unsigned long)emaUs,
@@ -188,11 +240,13 @@ def compose(source: str, *, usb_control: bool = True) -> str:
         INIT_ANCHOR
         + "\n  const bool janusVoiceOk = janusVoiceDsp.begin(EP_SAMPLE_RATE);"
         + "\n  janusVoiceDsp.setAmountPercent(JANUS_PYRAMID_LANGUAGE_AMOUNT);"
-        + "\n  Serial.printf(\"JANUS PYRAMID LANGUAGE | ok=%d profile=%s evidence=%s sr=%lu depth=%u%% delay_bytes=%u object_bytes=%u\\n\","
+        + "\n  Serial.printf(\"JANUS PYRAMID LANGUAGE | ok=%d profile=%s evidence=%s sr=%lu depth=%u%% failsafe=%d trip_blocks=%u delay_bytes=%u object_bytes=%u\\n\","
         + "\n                janusVoiceOk ? 1 : 0, janus_pyramid_117121::kProfileId,"
         + "\n                janus_pyramid_117121::kEvidenceStatus,"
         + "\n                (unsigned long)janusVoiceDsp.sampleRateHz(),"
         + "\n                (unsigned)janusVoiceDsp.targetAmountPercent(),"
+        + "\n                (unsigned)JANUS_PYRAMID_DSP_FAILSAFE,"
+        + "\n                (unsigned)JANUS_PYRAMID_DSP_OVER_BUDGET_TRIP,"
         + "\n                (unsigned)janusVoiceDsp.roomDelayBytes(),"
         + "\n                (unsigned)sizeof(janusVoiceDsp));"
     )
@@ -208,15 +262,16 @@ def compose(source: str, *, usb_control: bool = True) -> str:
         1,
     )
 
-    loop_prefix = "  janusVoiceStatusTick();\n"
+    loop_prefix = "  janusVoiceSafetyTick();\n  janusVoiceStatusTick();\n"
     if usb_control:
-        loop_prefix = "  janusVoiceSerialControlTick();\n" + loop_prefix
+        loop_prefix = "  janusVoiceSafetyTick();\n  janusVoiceSerialControlTick();\n  janusVoiceStatusTick();\n"
     source = source.replace(LOOP_STATUS_ANCHOR, loop_prefix + LOOP_STATUS_ANCHOR, 1)
 
     banner = (
         "// JANUS PYRAMID LANGUAGE COMPOSED LAYER\n"
         "// Profile: " + PROFILE_ID + "\n"
         "// Ordinary source PCM is preserved and acoustically colored in real time.\n"
+        "// Audio priority: 3 consecutive over-budget DSP blocks -> dry failsafe bypass.\n"
         + ("// USB tuning: PYR? | PYR=0..100 | PYR=ON | PYR=OFF\n" if usb_control
            else "// USB tuning: disabled by composer option\n")
         + "// 117-121 Hz is a project anchor band, not the only frequency.\n"
@@ -258,7 +313,7 @@ def main() -> int:
 
     out_raw = output.read_bytes()
     receipt = {
-        "schema": "janus.echo_pyramid.compose_receipt.v2.4",
+        "schema": "janus.echo_pyramid.compose_receipt.v2.5",
         "status": "PASS",
         "profile_id": PROFILE_ID,
         "language_version": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
@@ -271,6 +326,7 @@ def main() -> int:
         "injections": [
             "JanusPyramid117121DSP include",
             "Pyramid Language runtime + 0..100 percent depth API",
+            "audio-budget dry-bypass failsafe",
             "EP_SAMPLE_RATE DSP init",
             "timed processInPlace immediately before ep.write(chunk.mono, chunk.frames)",
             "10-second DSP real-time budget telemetry",
@@ -287,6 +343,12 @@ def main() -> int:
             "sample_rate_hz": 44100,
             "chunk_budget_us_floor": 5804,
             "telemetry": ["dsp_ema_us", "dsp_peak_us", "dsp_load_percent"],
+            "failsafe": {
+                "enabled_by_default": true,
+                "trip_condition": "DSP_PROCESS_TIME >= PCM_BLOCK_BUDGET",
+                "consecutive_blocks": 3,
+                "action": "DRY_BYPASS_UNTIL_EXPLICIT_PYR_ON_OR_REBOOT"
+            }
         },
         "embedded_room_tail": {
             "sample_rate_hz": 11025,
@@ -297,6 +359,7 @@ def main() -> int:
         },
         "hard_rules": [
             "ORDINARY_AUDIO_IN -> PYRAMID_COLORED_AUDIO_OUT",
+            "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT",
             "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY",
             "SERIAL_INPUT_HAS_ONE_OWNER",
             "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR",
@@ -308,6 +371,7 @@ def main() -> int:
     print("JANUS Echo-Pyramid composition PASS")
     print(f"Profile:         {PROFILE_ID}")
     print(f"USB control:     {'ON' if usb_control else 'OFF'}")
+    print("DSP failsafe:    ON (3 consecutive over-budget blocks -> dry bypass)")
     print(f"Base SHA-256:   {receipt['base_sha256']}")
     print(f"Output SHA-256: {receipt['output_sha256']}")
     print(f"Firmware:       {output}")
