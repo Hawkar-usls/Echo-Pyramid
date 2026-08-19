@@ -37,7 +37,11 @@
     "voice_runner": "src/nexus_voice_spiral_runner.py",
     "voice_config": "configs/osiris_aidar_eugene_spiral.v1.json",
     "habitat_gate": "habitat/state/NEXUS_VOICE_SPIRAL_GATE_v2.8.json",
-    "layers": ["LAYER_A_AIDAR", "LAYER_B_EUGENE", "SPIRAL_COMPARISON"],
+    "layers": [
+      "LAYER_A_AIDAR",
+      "LAYER_B_EUGENE",
+      "SPIRAL_COMPARISON"
+    ],
     "only_larynx_changes": true,
     "pyramid_language_changes_between_layers": false,
     "automatic_winner_selection": false,
@@ -54,11 +58,37 @@
     "composer": "tools/compose_swarm_firmware.py",
     "composer_blob_sha": "f0883a65c400456afbd9e9fbf7a8c531f338e8c9"
   },
+  "hardware_calibration": {
+    "status": "PENDING_DEVICE_MEASUREMENT",
+    "contract": "config/hardware_calibration_contract.json",
+    "contract_blob_sha": "b7b158373f2185b1b28ed67b4363c973fac30348",
+    "receipt_template": "config/hardware_calibration_receipt.template.json",
+    "receipt_template_blob_sha": "ea00c4f49ef7b71d6630022974e0c508c297744b",
+    "protocol": "docs/HARDWARE_CALIBRATION_PROTOCOL.md",
+    "signal_position": "POST_PYRAMID_LANGUAGE_PRE_SPEAKER",
+    "measured_compensation_active": false,
+    "neutral_output_trim_percent": 100,
+    "speaker_compensation_eq_enabled": false,
+    "language_locked_parameters": [
+      "anchor_band_hz",
+      "anchor_center_hz",
+      "anchor_q",
+      "anchor_gain_db",
+      "anchor_decay_s",
+      "resonators_hz",
+      "room_geometry_m",
+      "room_decay",
+      "wet",
+      "dry"
+    ],
+    "language_parameter_change_requires_new_language_version": true
+  },
   "signal_contract": "ORDINARY_AUDIO_PCM -> SAME_SOURCE_AUDIO_WITH_PYRAMID_ACOUSTIC_COLORATION",
   "authority_split": {
     "semantic_and_tts_larynx": "The-Voice-of-Janus / DemiHead upstream",
     "acoustic_language_contract": "The-Voice-of-Janus",
     "realtime_physical_execution": "Echo-Pyramid",
+    "physical_calibration": "Echo-Pyramid measured device/body compensation only",
     "speaker_output": "M5 Echo Pyramid hardware"
   },
   "embedded_conformance": {
@@ -85,6 +115,8 @@
     "DO_NOT_SYNTHESIZE_REPLACEMENT_TONES_FOR_SOURCE_AUDIO",
     "PRESERVE_SOURCE_SEMANTIC_CONTENT",
     "DO_NOT_CHANGE_117_121_LANGUAGE_PARAMETERS_WITHOUT_EXPLICIT_LANGUAGE_VERSION_BUMP",
+    "PHYSICAL_CALIBRATION_MUST_NOT_SILENTLY_RETUNE_LANGUAGE",
+    "MEASURE_BEFORE_ENABLING_SPEAKER_COMPENSATION_EQ",
     "EMBEDDED_PORT_REVISIONS_MUST_HAVE_DISTINCT_REVISION_IDS",
     "DSP_MUTABLE_STATE_HAS_ONE_RUNTIME_OWNER",
     "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT",
