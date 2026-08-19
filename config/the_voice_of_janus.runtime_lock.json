@@ -12,12 +12,15 @@
     "profile_id": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3"
   },
   "embedded_implementation": {
+    "revision": "ESP32-r2",
     "voice_contract": "config/voice_contract.json",
-    "voice_contract_blob_sha": "78130263f19c4375d4d91e625c526631fee805ca",
+    "voice_contract_blob_sha": "c81c08700bfb3d2cf3729c0deb4ee9c51f0a3290",
     "profile_header": "firmware/JanusPyramid117121Profile.h",
-    "profile_header_blob_sha": "1a411abe9661ad4812acca0a5996d7587a79b5e4",
+    "profile_header_blob_sha": "463e797c64a66650bb199a451e43195f6b1afd44",
     "dsp_header": "firmware/JanusPyramid117121DSP.h",
-    "dsp_header_blob_sha": "d32073f4d1c231b7c61b835f70c3f17a84c9fa76"
+    "dsp_header_blob_sha": "bdd535d2a6289ab442fd35f45035549d425c8eaf",
+    "composer": "tools/compose_swarm_firmware.py",
+    "composer_blob_sha": "2dcb3fd50ae988368f6aee43b61139fd6688b688"
   },
   "signal_contract": "ORDINARY_AUDIO_PCM -> SAME_SOURCE_AUDIO_WITH_PYRAMID_ACOUSTIC_COLORATION",
   "authority_split": {
@@ -26,9 +29,19 @@
     "realtime_physical_execution": "Echo-Pyramid",
     "speaker_output": "M5 Echo Pyramid hardware"
   },
+  "embedded_conformance": {
+    "language_parameters_changed": false,
+    "runtime_depth_control_added": true,
+    "runtime_budget_telemetry_added": true,
+    "room_tail_decimation": 4,
+    "source_delay_damping": 0.22,
+    "embedded_delay_damping": 0.00234256,
+    "damping_transform": "d_embedded = d_source^4"
+  },
   "hard_rules": [
     "DO_NOT_SYNTHESIZE_REPLACEMENT_TONES_FOR_SOURCE_AUDIO",
-    "DO_NOT_CHANGE_117_121_PROFILE_WITHOUT_EXPLICIT_LANGUAGE_VERSION_BUMP",
+    "DO_NOT_CHANGE_117_121_LANGUAGE_PARAMETERS_WITHOUT_EXPLICIT_LANGUAGE_VERSION_BUMP",
+    "EMBEDDED_PORT_REVISIONS_MUST_HAVE_DISTINCT_REVISION_IDS",
     "TTS_TIMBRE_CHANGES_MUST_NOT_CHANGE_PYRAMID_LANGUAGE_PARAMETERS",
     "MIC_MUSIC_TTS_AND_BLUETOOTH_PCM_SHARE_THE_SAME_ACOUSTIC_OPERATOR",
     "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR"
