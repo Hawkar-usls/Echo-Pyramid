@@ -1,0 +1,76 @@
+{
+  "schema": "janus.echo_pyramid.hardware_calibration.v1",
+  "status": "PENDING_DEVICE_MEASUREMENT",
+  "physical_repository": "Hawkar-usls/Echo-Pyramid",
+  "language_repository": "Hawkar-usls/The-Voice-of-Janus",
+  "language_profile": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
+  "embedded_revision": "ESP32-r2",
+  "principle": "CALIBRATE_THE_BODY_WITHOUT_SILENTLY_REWRITING_THE_LANGUAGE",
+  "signal_boundary": "PYRAMID_LANGUAGE_OUTPUT_PCM -> PHYSICAL_CALIBRATION -> M5EchoPyramid::write",
+  "language_locked_parameters": {
+    "anchor_band_hz": [117.0, 121.0],
+    "anchor_center_hz": 119.0,
+    "anchor_q": 29.75,
+    "anchor_gain_db": 11.5,
+    "anchor_decay_s": 1.65,
+    "resonators_hz": [117.0, 119.0, 121.0],
+    "room_geometry_m": [10.45, 5.20, 5.80],
+    "room_decay": 0.78,
+    "wet": 0.72,
+    "dry": 0.62,
+    "rule": "ANY_CHANGE_TO_THESE_VALUES_IS_A_LANGUAGE_RETUNE_AND_REQUIRES_A_NEW_LANGUAGE_VERSION_AND_RECEIPT"
+  },
+  "physical_calibration_parameters": {
+    "runtime_depth_percent": {
+      "range": [0, 100],
+      "default": 100,
+      "status": "ACTIVE_EXISTING_CONTROL",
+      "meaning": "Listening depth between dry source and canonical language output; does not rewrite language constants"
+    },
+    "output_trim_percent": {
+      "range": [0, 100],
+      "default": 100,
+      "status": "NEUTRAL_UNTIL_MEASURED",
+      "meaning": "Post-language device-level gain trim for safe level matching"
+    },
+    "speaker_compensation_eq": {
+      "status": "DISABLED_UNTIL_MEASURED_DEVICE_RESPONSE",
+      "allowed_purpose": "Inverse compensation for repeatable device/enclosure coloration only",
+      "forbidden_purpose": "Creative retuning of the 117-121 Hz language operator",
+      "requires_measurement_receipt": true
+    },
+    "latency_compensation": {
+      "status": "MEASUREMENT_OPTIONAL",
+      "meaning": "Physical timing alignment only; must not alter language decay constants"
+    },
+    "protection_ceiling": {
+      "status": "SAFETY_ONLY",
+      "meaning": "Device protection/output ceiling; never used to hide a realtime performance failure"
+    }
+  },
+  "measurement_requirements": {
+    "same_source_for_ab": true,
+    "same_phone_volume_for_ab": true,
+    "record_dsp_ema_us": true,
+    "record_dsp_peak_us": true,
+    "record_audio_drop_delta": true,
+    "record_free_heap_min": true,
+    "record_bt_disconnects": true,
+    "record_depth_preference": true,
+    "record_measured_device_response_before_enabling_speaker_eq": true
+  },
+  "versioning": {
+    "physical_only_change": "NEW_CALIBRATION_RECEIPT_WITH_SAME_LANGUAGE_PROFILE",
+    "language_parameter_change": "NEW_PYRAMID_LANGUAGE_VERSION_REQUIRED",
+    "example_language_successor": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.4",
+    "silent_mutation": "FORBIDDEN"
+  },
+  "hard_rules": [
+    "PHYSICAL_CALIBRATION != LANGUAGE_RETUNE",
+    "GAIN_Q_DECAY_WET_DRY_ARE_LANGUAGE_LOCKED",
+    "MEASURE_BEFORE_COMPENSATE",
+    "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT",
+    "DO_NOT_USE_CALIBRATION_TO_HIDE_QUEUE_DROPS_OR_DSP_OVERLOAD",
+    "PRESERVE_ORIGINAL_MEASUREMENTS_AND_RECEIPTS"
+  ]
+}
