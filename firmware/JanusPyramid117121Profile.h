@@ -10,9 +10,11 @@ namespace janus_pyramid_117121 {
 // configs/pyramid_117_121_space.activation.json
 // src/pyramid_anchor_filter.py::Pyramid117121Filter
 //
-// This is a project acoustic anchor / model-based effect. It is NOT a measured
-// chamber impulse response and NOT evidence of intentional ancient tuning.
-static const char kProfileId[] = "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32";
+// Language version stays v0.3. ESP32-r2 identifies only this bounded physical
+// implementation (runtime depth + corrected 4x-decimated room damping).
+static const char kProfileId[] = "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32-r2";
+static const char kLanguageVersion[] = "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3";
+static const char kEmbeddedRevision[] = "ESP32-r2";
 static const char kEvidenceStatus[] = "MODEL_BASED_117_121_HZ_ANCHORED_EFFECT";
 static const char kClaimBoundary[] = "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY";
 
