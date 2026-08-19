@@ -1,6 +1,6 @@
 {
   "schema": "janus.echo_pyramid.voice_contract.v2",
-  "version": "2.1",
+  "version": "2.2",
   "node": {
     "repository": "Hawkar-usls/Echo-Pyramid",
     "hardware": "M5Stack Echo Pyramid A167 + Atom Matrix",
@@ -31,6 +31,7 @@
     "GEOMETRY_DERIVED_ROOM_TAIL",
     "DRY_WET_MIX",
     "SOFT_LIMIT",
+    "PYRAMID_SPACE_DEPTH_CROSSFADE",
     "M5EchoPyramid::write",
     "ES8311_CODEC",
     "AW87559_AMPLIFIER",
@@ -38,7 +39,9 @@
   ],
   "primary_dsp": {
     "implementation": "firmware/JanusPyramid117121DSP.h",
-    "profile": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32",
+    "language_version": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
+    "embedded_revision": "ESP32-r2",
+    "profile": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32-r2",
     "evidence_status": "MODEL_BASED_117_121_HZ_ANCHORED_EFFECT",
     "anchor_band_hz": [117.0, 121.0],
     "anchor_center_hz": 119.0,
@@ -51,6 +54,14 @@
     "room_decay": 0.78,
     "wet": 0.72,
     "dry": 0.62,
+    "runtime_depth": {
+      "api": "JanusPyramid117121DSP::setAmountPercent(uint8_t)",
+      "range_percent": [0, 100],
+      "default_percent": 100,
+      "zero_percent_semantics": "ORIGINAL_SOURCE_AUDIO",
+      "hundred_percent_semantics": "CANONICAL_PYRAMID_LANGUAGE_V0_3",
+      "transition": "LINEAR_RAMP_ACROSS_NEXT_PCM_BLOCK"
+    },
     "embedded_room_tail": {
       "full_rate_anchor_path_hz": 44100,
       "room_tail_rate_hz": 11025,
@@ -58,7 +69,10 @@
       "storage": "PCM16_STATIC",
       "delay_samples": [672, 334, 373, 354],
       "delay_bytes": 3466,
-      "reason": "Preserve geometry-derived delay times with bounded SRAM use on classic ESP32"
+      "source_delay_damping": 0.22,
+      "embedded_delay_damping": 0.00234256,
+      "damping_transform": "d_embedded = d_source^4",
+      "reason": "Preserve modeled delay times and approximate damping wall-clock persistence with bounded SRAM/CPU on classic ESP32"
     }
   },
   "legacy_reference_dsp": {
@@ -69,19 +83,35 @@
   "integration": {
     "insert_before": "ep.write(chunk.mono, chunk.frames);",
     "default_enabled": true,
+    "default_depth_percent": 100,
+    "compile_time_override": "JANUS_PYRAMID_LANGUAGE_AMOUNT",
     "applies_to_bluetooth_pcm": true,
     "applies_to_local_mic_smoke_test": true,
     "extra_i2s_channel": false,
     "heap_allocation_in_audio_path": false,
     "preserve_bt_approval_gate": true,
     "preserve_espnow_worker": true,
-    "preserve_audio_priority": true
+    "preserve_audio_priority": true,
+    "realtime_telemetry": {
+      "interval_ms": 10000,
+      "chunk_frames": 256,
+      "chunk_budget_us_floor_at_44100": 5804,
+      "fields": [
+        "dsp_ema_us",
+        "dsp_peak_us",
+        "dsp_load_percent",
+        "depth_percent",
+        "delay_bytes",
+        "free_heap"
+      ]
+    }
   },
   "hard_rules": [
     "ORDINARY_AUDIO_IN -> PYRAMID_COLORED_AUDIO_OUT",
     "DO_NOT_REPLACE_SOURCE_AUDIO_WITH_SYNTHETIC_TONES",
     "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY",
     "KEEP_DRY_PATH_FOR_INTELLIGIBILITY",
+    "LANGUAGE_V0_3 != EMBEDDED_REVISION_ESP32_R2",
     "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR",
     "PREDICTED_ACOUSTIC_MODEL != PROOF_OF_ANCIENT_INTENT",
     "METAPHOR != PHYSICS"
