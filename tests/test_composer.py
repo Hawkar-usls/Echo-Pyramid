@@ -51,16 +51,24 @@ def main() -> int:
     out = compose(BASE)
     assert PROFILE_ID.endswith("/ESP32-r2")
     assert '#include "JanusPyramid117121DSP.h"' in out
+    assert "#include <stdlib.h>" in out
+    assert "#include <string.h>" in out
     assert "JanusPyramid117121DSP janusVoiceDsp;" in out
     assert "JANUS_PYRAMID_LANGUAGE_AMOUNT" in out
     assert "janusVoiceDsp.begin(EP_SAMPLE_RATE)" in out
     assert "janusVoiceDsp.setAmountPercent(JANUS_PYRAMID_LANGUAGE_AMOUNT)" in out
     assert "janusVoiceProcessChunk(chunk.mono, chunk.frames);" in out
+    assert "janusVoiceSerialControlTick();" in out
     assert "janusVoiceStatusTick();" in out
+    assert "PYR=0..100" in out
+    assert "PYR=OFF" in out
+    assert "PYR=ON" in out
+    assert "PYR?" in out
     assert "dsp_ema_us" in out
     assert out.index("janusVoiceProcessChunk(chunk.mono, chunk.frames);") < out.index(
         "ep.write(chunk.mono, chunk.frames);"
     )
+    assert out.index("janusVoiceSerialControlTick();") < out.index("serialStatus();")
 
     expect_fail(BASE.replace("#include <M5EchoPyramid.h>\n", ""), "include")
     expect_fail(BASE.replace("M5EchoPyramid ep;", "M5EchoPyramid other;"), "global")
