@@ -3,13 +3,21 @@
   "status": "ACTIVE_PINNED_LANGUAGE_RUNTIME",
   "physical_repository": "Hawkar-usls/Echo-Pyramid",
   "language_repository": "Hawkar-usls/The-Voice-of-Janus",
-  "observed_voice_head_commit": "2548fbbf5c4aa933f7e3c6e14b8939b8a3422ca3",
+  "observed_voice_head_commit": "baf3491cfea810c99a0d78adc691ebfe5272304f",
   "canonical_language": {
     "activation": "configs/pyramid_117_121_space.activation.json",
     "activation_blob_sha": "3d3203b53bf181656eac815235f1238ef7c4e57a",
     "reference_implementation": "src/pyramid_anchor_filter.py::Pyramid117121Filter",
     "reference_implementation_blob_sha": "c344504328fcfe2934949cfa2ab6f0ba138c18d1",
     "profile_id": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3"
+  },
+  "upstream_larynx": {
+    "current_pointer": "configs/LARYNX_CURRENT.json",
+    "current_pointer_blob_sha": "c71fb791e41d6dc5f4a5a082dcc46a9b11b88c12",
+    "backend": "silero_v5_5_ru",
+    "default_speaker": "aidar",
+    "larynx_is_language": false,
+    "larynx_change_modifies_pyramid_parameters": false
   },
   "embedded_implementation": {
     "revision": "ESP32-r2",
