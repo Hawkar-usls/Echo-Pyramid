@@ -63,12 +63,64 @@ volatile bool janusVoiceBudgetTrip = false;
 volatile uint8_t janusVoiceOverBudgetStreak = 0;
 volatile uint32_t janusVoiceFailsafeTrips = 0;
 
+// Cross-core user controls are requests only. The main loop/USB console never
+// mutates resonator/delay state directly while janus_audio may be processing it.
+// The audio task owns application of these requests at a PCM block boundary.
+portMUX_TYPE janusVoiceControlMux = portMUX_INITIALIZER_UNLOCKED;
+int8_t janusVoicePendingEnable = -1;  // -1 none, 0 disable, 1 enable
+int16_t janusVoicePendingDepth = -1;  // -1 none, otherwise 0..100
+bool janusVoicePendingClearFailsafe = false;
+
+static void janusVoiceQueueControl(int8_t enableRequest, int16_t depthRequest,
+                                   bool clearFailsafe) {
+  portENTER_CRITICAL(&janusVoiceControlMux);
+  if (enableRequest >= 0) janusVoicePendingEnable = enableRequest ? 1 : 0;
+  if (depthRequest >= 0 && depthRequest <= 100) janusVoicePendingDepth = depthRequest;
+  if (clearFailsafe) janusVoicePendingClearFailsafe = true;
+  portEXIT_CRITICAL(&janusVoiceControlMux);
+}
+
+static void janusVoicePendingSnapshot(int8_t &enableRequest, int16_t &depthRequest,
+                                      bool &clearFailsafe, bool consume) {
+  portENTER_CRITICAL(&janusVoiceControlMux);
+  enableRequest = janusVoicePendingEnable;
+  depthRequest = janusVoicePendingDepth;
+  clearFailsafe = janusVoicePendingClearFailsafe;
+  if (consume) {
+    janusVoicePendingEnable = -1;
+    janusVoicePendingDepth = -1;
+    janusVoicePendingClearFailsafe = false;
+  }
+  portEXIT_CRITICAL(&janusVoiceControlMux);
+}
+
+static void janusVoiceApplyPendingAtBlockBoundary() {
+  int8_t enableRequest = -1;
+  int16_t depthRequest = -1;
+  bool clearFailsafe = false;
+  janusVoicePendingSnapshot(enableRequest, depthRequest, clearFailsafe, true);
+
+  if (clearFailsafe) {
+    janusVoiceBudgetTrip = false;
+    janusVoiceOverBudgetStreak = 0;
+    janusVoiceProcessUsEma = 0;
+    janusVoiceProcessUsPeakWindow = 0;
+  }
+  if (enableRequest >= 0) janusVoiceDsp.setEnabled(enableRequest != 0);
+  if (depthRequest >= 0) janusVoiceDsp.setAmountPercent((uint8_t)depthRequest);
+}
+
 static void janusVoiceProcessChunk(int16_t* pcm, uint16_t frames) {
   janusVoiceBlocks++;
   janusVoiceFramesL32 += frames;
 
+  // Apply external requests here, where this task exclusively owns mutable DSP
+  // state. This avoids reset()/delay-buffer races between loopTask and janus_audio.
+  janusVoiceApplyPendingAtBlockBoundary();
+
   // Once the real-time guard trips, leave the queued source PCM untouched.
-  // The main loop performs the one-time state reset outside this audio task.
+  // The main loop performs the one-time state reset outside this audio task only
+  // after the trip guarantees subsequent audio calls return dry.
   if (janusVoiceBudgetTrip || !janusVoiceDsp.enabled() || !pcm || frames == 0) return;
 
   const uint32_t budgetUs =
@@ -98,8 +150,8 @@ static void janusVoiceProcessChunk(int16_t* pcm, uint16_t frames) {
 static void janusVoiceSafetyTick() {
 #if JANUS_PYRAMID_DSP_FAILSAFE
   if (janusVoiceBudgetTrip && janusVoiceDsp.enabled()) {
-    // Reset resonator/delay state outside the audio playback task. Future chunks
-    // remain dry until an explicit local PYR=ON or a reboot clears the trip.
+    // The trip flag makes every subsequent audio block return before touching
+    // DSP state, so this one-time reset cannot race a new DSP invocation.
     janusVoiceDsp.setEnabled(false);
     Serial.printf("PYRAMID_LANGUAGE_FAILSAFE | DRY_BYPASS reason=DSP_OVER_BUDGET trips=%lu peak_us=%lu\n",
                   (unsigned long)janusVoiceFailsafeTrips,
@@ -114,12 +166,19 @@ char janusVoiceSerialBuf[24] = {0};
 uint8_t janusVoiceSerialLen = 0;
 
 static void janusVoicePrintControlState(const char* reason) {
-  Serial.printf("PYRAMID_LANGUAGE_CONTROL | %s enabled=%d depth=%u%% failsafe=%d trips=%lu profile=%s\n",
+  int8_t pendingEnable = -1;
+  int16_t pendingDepth = -1;
+  bool pendingClear = false;
+  janusVoicePendingSnapshot(pendingEnable, pendingDepth, pendingClear, false);
+  Serial.printf("PYRAMID_LANGUAGE_CONTROL | %s enabled=%d depth=%u%% failsafe=%d trips=%lu pending_enable=%d pending_depth=%d pending_clear=%d profile=%s\n",
                 reason ? reason : "STATE",
                 janusVoiceDsp.enabled() ? 1 : 0,
                 (unsigned)janusVoiceDsp.targetAmountPercent(),
                 janusVoiceBudgetTrip ? 1 : 0,
                 (unsigned long)janusVoiceFailsafeTrips,
+                (int)pendingEnable,
+                (int)pendingDepth,
+                pendingClear ? 1 : 0,
                 janus_pyramid_117121::kProfileId);
 }
 
@@ -131,25 +190,21 @@ static void janusVoiceApplySerialCommand(const char* cmd) {
     return;
   }
   if (strcmp(cmd, "PYR=OFF") == 0) {
-    janusVoiceDsp.setEnabled(false);
-    janusVoicePrintControlState("HARD_BYPASS");
+    janusVoiceQueueControl(0, -1, false);
+    janusVoicePrintControlState("HARD_BYPASS_QUEUED");
     return;
   }
   if (strcmp(cmd, "PYR=ON") == 0) {
-    janusVoiceBudgetTrip = false;
-    janusVoiceOverBudgetStreak = 0;
-    janusVoiceProcessUsEma = 0;
-    janusVoiceProcessUsPeakWindow = 0;
-    janusVoiceDsp.setEnabled(true);
-    janusVoicePrintControlState("ENABLED_FAILSAFE_CLEARED");
+    janusVoiceQueueControl(1, -1, true);
+    janusVoicePrintControlState("ENABLE_AND_FAILSAFE_CLEAR_QUEUED");
     return;
   }
   if (strncmp(cmd, "PYR=", 4) == 0) {
     char* end = nullptr;
     long value = strtol(cmd + 4, &end, 10);
     if (end && *end == '\0' && value >= 0 && value <= 100) {
-      janusVoiceDsp.setAmountPercent((uint8_t)value);
-      janusVoicePrintControlState("DEPTH_SET");
+      janusVoiceQueueControl(-1, (int16_t)value, false);
+      janusVoicePrintControlState("DEPTH_QUEUED");
       return;
     }
   }
@@ -271,6 +326,7 @@ def compose(source: str, *, usb_control: bool = True) -> str:
         "// JANUS PYRAMID LANGUAGE COMPOSED LAYER\n"
         "// Profile: " + PROFILE_ID + "\n"
         "// Ordinary source PCM is preserved and acoustically colored in real time.\n"
+        "// Controls are applied by janus_audio at PCM block boundaries.\n"
         "// Audio priority: 3 consecutive over-budget DSP blocks -> dry failsafe bypass.\n"
         + ("// USB tuning: PYR? | PYR=0..100 | PYR=ON | PYR=OFF\n" if usb_control
            else "// USB tuning: disabled by composer option\n")
@@ -313,7 +369,7 @@ def main() -> int:
 
     out_raw = output.read_bytes()
     receipt = {
-        "schema": "janus.echo_pyramid.compose_receipt.v2.5",
+        "schema": "janus.echo_pyramid.compose_receipt.v2.6",
         "status": "PASS",
         "profile_id": PROFILE_ID,
         "language_version": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
@@ -326,11 +382,18 @@ def main() -> int:
         "injections": [
             "JanusPyramid117121DSP include",
             "Pyramid Language runtime + 0..100 percent depth API",
+            "cross-core control request mailbox applied at PCM block boundaries",
             "audio-budget dry-bypass failsafe",
             "EP_SAMPLE_RATE DSP init",
             "timed processInPlace immediately before ep.write(chunk.mono, chunk.frames)",
             "10-second DSP real-time budget telemetry",
         ] + (["USB Serial local tuning control"] if usb_control else []),
+        "control_ownership": {
+            "dsp_mutable_state_owner": "JANUS_AUDIO_PLAYBACK_TASK",
+            "external_control_model": "PORTMUX_GUARDED_REQUEST_MAILBOX",
+            "application_boundary": "NEXT_PCM_BLOCK",
+            "direct_cross_core_dsp_reset_from_usb": false,
+        },
         "usb_control": {
             "enabled": usb_control,
             "network_io": false,
@@ -359,6 +422,7 @@ def main() -> int:
         },
         "hard_rules": [
             "ORDINARY_AUDIO_IN -> PYRAMID_COLORED_AUDIO_OUT",
+            "DSP_MUTABLE_STATE_HAS_ONE_RUNTIME_OWNER",
             "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT",
             "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY",
             "SERIAL_INPUT_HAS_ONE_OWNER",
@@ -371,6 +435,7 @@ def main() -> int:
     print("JANUS Echo-Pyramid composition PASS")
     print(f"Profile:         {PROFILE_ID}")
     print(f"USB control:     {'ON' if usb_control else 'OFF'}")
+    print("DSP controls:    audio-task owned / block-boundary applied")
     print("DSP failsafe:    ON (3 consecutive over-budget blocks -> dry bypass)")
     print(f"Base SHA-256:   {receipt['base_sha256']}")
     print(f"Output SHA-256: {receipt['output_sha256']}")
