@@ -37,9 +37,9 @@ void loop() {
 '''
 
 
-def expect_fail(source: str, needle: str) -> None:
+def expect_fail(source: str, needle: str, *, usb_control: bool = True) -> None:
     try:
-        compose(source)
+        compose(source, usb_control=usb_control)
     except RuntimeError as exc:
         if needle not in str(exc):
             raise AssertionError(f"expected {needle!r} in error, got {exc!r}") from exc
@@ -69,6 +69,22 @@ def main() -> int:
         "ep.write(chunk.mono, chunk.frames);"
     )
     assert out.index("janusVoiceSerialControlTick();") < out.index("serialStatus();")
+
+    # Future base firmware may legitimately own the console. Default compose must
+    # then stop instead of stealing bytes. Explicit no-USB mode keeps DSP/telemetry.
+    serial_owner = BASE.replace(
+        "void serialStatus() {}",
+        "void serialStatus() { if (Serial.available() > 0) { (void)Serial.read(); } }",
+    )
+    expect_fail(serial_owner, "USB Serial input ownership conflict")
+    no_usb = compose(serial_owner, usb_control=False)
+    assert "janusVoiceSerialControlTick" not in no_usb
+    assert "PYR=0..100" not in no_usb
+    assert "#include <stdlib.h>" not in no_usb
+    assert "#include <string.h>" not in no_usb
+    assert "janusVoiceProcessChunk(chunk.mono, chunk.frames);" in no_usb
+    assert "janusVoiceStatusTick();" in no_usb
+    assert "DISABLED_BY_COMPOSER" in no_usb
 
     expect_fail(BASE.replace("#include <M5EchoPyramid.h>\n", ""), "include")
     expect_fail(BASE.replace("M5EchoPyramid ep;", "M5EchoPyramid other;"), "global")
