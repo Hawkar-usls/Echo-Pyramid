@@ -10,11 +10,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Verify pinned Voice runtime lock
+        run: python tools/verify_runtime_lock.py
       - name: Verify legacy embedded modal profile
         run: python tools/verify_profile.py
-      - name: Build Pyramid Language v0.3 test
+      - name: Test fail-closed swarm composer
+        run: python tests/test_composer.py
+      - name: Build Pyramid Language v0.3 ESP32-r2 test
         run: g++ -std=c++11 -O2 -Wall -Wextra -pedantic -Ifirmware tests/test_anchor_dsp.cpp -o test_anchor_dsp
-      - name: Run Pyramid Language v0.3 test
+      - name: Run Pyramid Language v0.3 ESP32-r2 test
         run: ./test_anchor_dsp
       - name: Build legacy modal DSP test
         run: g++ -std=c++11 -O2 -Wall -Wextra -pedantic -Ifirmware tests/test_dsp.cpp -o test_dsp
