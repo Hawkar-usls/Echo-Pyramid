@@ -29,7 +29,7 @@
   "voice_language": {
     "repository": "Hawkar-usls/The-Voice-of-Janus",
     "branch": "main",
-    "observed_head_commit": "27cfc812029f0b6a4a40cd8cf77404b719fea166",
+    "observed_head_commit": "f8567b16b85e8da0a74083cd7a9c2162547d2600",
     "files": {
       "configs/pyramid_117_121_space.activation.json": "3d3203b53bf181656eac815235f1238ef7c4e57a",
       "src/pyramid_anchor_filter.py": "c344504328fcfe2934949cfa2ab6f0ba138c18d1",
@@ -45,6 +45,7 @@
     "composer_must_fail_if_usb_control_conflicts_with_existing_serial_input_owner": true,
     "no_usb_control_mode_may_preserve_dsp_and_telemetry": true,
     "audio_continuity_has_priority_over_effect": true,
+    "dsp_mutable_state_has_one_runtime_owner": true,
     "do_not_silently_upgrade_language_profile": true,
     "new_measured_profiles_must_preserve_old_model_profiles": true
   }
