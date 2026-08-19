@@ -1,0 +1,44 @@
+{
+  "schema": "janus.echo_pyramid.source_lock.v1",
+  "generated_for": "Echo-Pyramid physical voice integration",
+  "hardware": {
+    "repository": "m5stack/M5Echo-Pyramid",
+    "branch": "main",
+    "observed_head_commit": "216795fc9ef0f60aa716bf00bb6b3ef9be67f5f5",
+    "files": {
+      "src/M5EchoPyramid.h": "3110abdde78f41ed60257afafda110f653730bcf",
+      "src/M5EchoPyramid.cpp": "d6b09964940cdc353b6c0aed193e76f9decb955c"
+    }
+  },
+  "swarm": {
+    "repository": "Hawkar-usls/janus-distributed-ai-swarm",
+    "branch": "main",
+    "observed_head_commit": "43eb173e28f4a8b3e396efc1466db1da02b3c1c7",
+    "files": {
+      "firmware/pyramid/ATOM_MATRIX_Pyramid.ino": "3b514eddd6486430c74c09c1d850483175de045a"
+    },
+    "integration_anchors": [
+      "#include <M5EchoPyramid.h>",
+      "M5EchoPyramid ep;",
+      "  initPyramid();",
+      "        ep.write(chunk.mono, chunk.frames);"
+    ]
+  },
+  "voice_language": {
+    "repository": "Hawkar-usls/The-Voice-of-Janus",
+    "branch": "main",
+    "observed_head_commit": "f63b628ff3e20b78dfc29042454e737e1a7b7f2a",
+    "files": {
+      "configs/pyramid_117_121_space.activation.json": "3d3203b53bf181656eac815235f1238ef7c4e57a",
+      "src/pyramid_anchor_filter.py": "c344504328fcfe2934949cfa2ab6f0ba138c18d1",
+      "configs/osiris_origin_prime_recitation.v2.json": "e04a172dff903d31751b0b49cff2644788731dca"
+    },
+    "primary_operator": "Pyramid117121Filter",
+    "anchor_band_hz": [117.0, 121.0]
+  },
+  "policy": {
+    "composer_must_fail_on_ambiguous_anchor_drift": true,
+    "do_not_silently_upgrade_language_profile": true,
+    "new_measured_profiles_must_preserve_old_model_profiles": true
+  }
+}
