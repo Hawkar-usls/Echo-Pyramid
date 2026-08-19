@@ -1,0 +1,158 @@
+name: Resonant Cosmos DemiHead Voice Link
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reciprocal-link:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Check out Echo-Pyramid candidate
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check out exact Cosmos provider
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Janus-Cosmos
+          ref: c543eb6ed753339fabed33d7f0ab880d43433d0f
+          path: _peers/cosmos
+          submodules: recursive
+
+      - name: Check out exact DemiHead mediator
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/Demi_Head
+          ref: f8fd4b16cb1306df9902a2215c4e092789dce8e7
+          path: _peers/demi
+
+      - name: Check out exact Voice resonant renderer
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/The-Voice-of-Janus
+          ref: a759ceec955b45cdb3cab876cc1279032237aa35
+          path: _peers/voice
+
+      - name: Verify reciprocal route, profile, and hard boundaries
+        run: |
+          python3 - <<'PY'
+          import json
+          from pathlib import Path
+
+          link=json.loads(Path('.janus/RESONANT_COSMOS_DEMIHEAD_VOICE_LINK.json').read_text())
+          body=json.loads(Path('config/voice_contract.json').read_text())
+          cosmos=json.loads(Path('_peers/cosmos/workspace/OSIRIS_V3_1_RESONANT_LINEAGE_ORION_PYRAMID_FROZEN_CONTRACT.json').read_text())
+          demi=json.loads(Path('_peers/demi/contracts/NEXUS_V2_9_RESONANT_ORION_PYRAMID_CHAIN_FROZEN_CONTRACT.json').read_text())
+          voice=json.loads(Path('_peers/voice/data/COSMOS_RESONANT_ORIGIN_PRIME_PYRAMID_RENDER_FROZEN_CONTRACT.v1.json').read_text())
+
+          assert link['status']=='CANDIDATE_RECIPROCAL_LINK'
+          assert link['providers']['cosmos_resonant_origin_prime']['revision']=='c543eb6ed753339fabed33d7f0ab880d43433d0f'
+          assert link['providers']['demihead_mediator']['revision']=='f8fd4b16cb1306df9902a2215c4e092789dce8e7'
+          assert link['providers']['voice_resonant_execution']['revision']=='a759ceec955b45cdb3cab876cc1279032237aa35'
+          assert link['required_route']==[
+            'DEMIHEAD_INTENT',
+            'JANUS_COSMOS_ORIGIN_PRIME_RESONANT_STATE',
+            'DEMIHEAD_RESONANT_VOICE_BROKER',
+            'THE_VOICE_OF_JANUS_RESONANT_ADAPTER',
+            'PYRAMID_LANGUAGE_117_121',
+            'ECHO_PYRAMID_PHYSICAL_BODY',
+          ]
+
+          rep=link['accepted_representation']
+          assert rep['anchor_band_hz']==[117.0,121.0]
+          assert rep['center_hz']==119.0
+          assert rep['q']==29.75
+          assert rep['gain_db']==11.5
+          assert rep['decay_s']==1.65
+          assert rep['semantic_content_preserved'] is True
+          assert rep['source_audio_replaced_by_synthetic_tones'] is False
+          assert rep['star_triplet']==['Mintaka','Alnilam','Alnitak']
+          assert rep['janus_rebus_alias']=='S𓂸ḥ'
+          assert rep['janus_rebus_alias_is_historical_transliteration'] is False
+          assert rep['giza_orion_correlation']=='HYPOTHESIS_NOT_ASSERTED_AS_ARCHITECTURAL_FACT'
+
+          physical=link['physical_boundary']
+          assert physical['metadata_link_is_playback_authorization'] is False
+          assert physical['automatic_playback_permitted'] is False
+          assert physical['microphone_permission_granted'] is False
+          assert physical['bluetooth_permission_granted'] is False
+          assert physical['firmware_flash_permission_granted'] is False
+          assert physical['network_control_permission_granted'] is False
+          assert physical['direct_cosmos_to_echo_permitted'] is False
+          assert physical['demihead_mediation_required'] is True
+          assert physical['voice_renderer_required'] is True
+          assert physical['write_back_default']=='DENY'
+
+          ceiling=link['claim_ceiling']
+          assert ceiling['audio_is_proof'] is False
+          assert ceiling['117_121_hz_is_sat_evidence'] is False
+          assert ceiling['astral_geometry_is_proof'] is False
+          assert ceiling['orion_giza_architectural_intent']=='NOT_ESTABLISHED'
+          assert ceiling['authority_delta']==0
+          assert ceiling['P_VS_NP']=='OPEN'
+
+          behavior=body['behavior_contract']
+          dsp=body['primary_dsp']
+          assert behavior['input']=='ORDINARY_AUDIO_PCM'
+          assert behavior['output']=='SAME_SOURCE_AUDIO_WITH_PYRAMID_ACOUSTIC_COLORATION'
+          assert behavior['semantic_content_preserved'] is True
+          assert behavior['source_audio_replaced_by_synthetic_tones'] is False
+          assert behavior['dry_path_preserved'] is True
+          assert dsp['anchor_band_hz']==[117.0,121.0]
+          assert dsp['anchor_center_hz']==119.0
+          assert dsp['anchor_q']==29.75
+          assert dsp['anchor_gain_db']==11.5
+          assert dsp['anchor_decay_s']==1.65
+          assert 'METAPHOR != PHYSICS' in body['hard_rules']
+
+          assert cosmos['admitted_transformation_classes']['VARIABLE_RENAMING_BIJECTION']['status']=='ADMITTED_WITH_EXACT_VERIFIER'
+          assert cosmos['voice_representation']['authority_delta']==0
+          assert cosmos['astral_representation']['authority_delta']==0
+          assert cosmos['scientific_boundary']['P_VS_NP']=='OPEN'
+
+          assert demi['providers']['cosmos']['sha']=='c543eb6ed753339fabed33d7f0ab880d43433d0f'
+          assert demi['lineage_policy']['memory_may_propose_not_verdict'] is True
+          assert demi['voice_policy']['center_hz']==119.0
+          assert demi['astral_policy']['authority_delta']==0
+          assert demi['claim_ceiling']['P_VS_NP']=='OPEN'
+
+          assert voice['source_provider']['sha']=='c543eb6ed753339fabed33d7f0ab880d43433d0f'
+          assert voice['required_mediator']=='Hawkar-usls/Demi_Head'
+          assert voice['voice_profile']['center_hz']==119.0
+          assert voice['astral_representation']['authority_delta']==0
+          assert voice['claim_ceiling']['P_VS_NP']=='OPEN'
+
+          for required in [
+            '_peers/cosmos/workspace/osiris_origin_prime_resonant_packet.py',
+            '_peers/demi/tools/cosmos_resonant_orion_pyramid_bridge_v2_9.py',
+            '_peers/voice/src/cosmos_resonant_origin_prime_pyramid_adapter.py',
+            'firmware/JanusPyramid117121DSP.h',
+          ]:
+            assert Path(required).is_file(), required
+
+          print('ECHO_RECIPROCAL_RESONANT_LINK=PASS')
+          print('DIRECT_COSMOS_TO_ECHO=false')
+          print('AUTOMATIC_PLAYBACK=false')
+          print('AUTHORITY_DELTA=0')
+          print('P_VS_NP=OPEN')
+          PY
+
+      - name: Confirm metadata-only Echo delta
+        run: |
+          git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD | sort > /tmp/changed.txt
+          cat /tmp/changed.txt
+          python3 - <<'PY'
+          from pathlib import Path
+          changed=set(Path('/tmp/changed.txt').read_text().splitlines())
+          allowed={
+            '.janus/RESONANT_COSMOS_DEMIHEAD_VOICE_LINK.json',
+            '.github/workflows/resonant-cosmos-demihead-link.yml',
+          }
+          assert changed <= allowed, f'unexpected Echo runtime/DSP mutation: {sorted(changed-allowed)}'
+          assert '.janus/RESONANT_COSMOS_DEMIHEAD_VOICE_LINK.json' in changed
+          PY
