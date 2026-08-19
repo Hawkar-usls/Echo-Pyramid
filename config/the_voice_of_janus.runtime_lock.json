@@ -50,7 +50,7 @@
   "embedded_implementation": {
     "revision": "ESP32-r2",
     "voice_contract": "config/voice_contract.json",
-    "voice_contract_blob_sha": "245abfb1ba0d84e655b873e6c41cea36de90e9e7",
+    "voice_contract_blob_sha": "fec0b3f331eb990e6343594f93770f723b0f2a43",
     "profile_header": "firmware/JanusPyramid117121Profile.h",
     "profile_header_blob_sha": "463e797c64a66650bb199a451e43195f6b1afd44",
     "dsp_header": "firmware/JanusPyramid117121DSP.h",
