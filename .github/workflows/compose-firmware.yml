@@ -1,0 +1,53 @@
+name: Compose JANUS Echo-Pyramid Firmware
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  compose-current-pinned-swarm:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Echo-Pyramid
+        uses: actions/checkout@v4
+
+      - name: Checkout JANUS swarm body
+        uses: actions/checkout@v4
+        with:
+          repository: Hawkar-usls/janus-distributed-ai-swarm
+          ref: main
+          path: _swarm
+
+      - name: Verify pinned swarm Pyramid blob and ownership anchors
+        run: |
+          python tools/verify_swarm_checkout.py \
+            _swarm/firmware/pyramid/ATOM_MATRIX_Pyramid.ino
+
+      - name: Compose Pyramid Language v0.3 ESP32-r2 firmware
+        run: |
+          mkdir -p build/ATOM_MATRIX_Pyramid_JanusVoice
+          python tools/compose_swarm_firmware.py \
+            _swarm/firmware/pyramid/ATOM_MATRIX_Pyramid.ino \
+            build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino
+
+      - name: Verify composed bundle
+        run: |
+          test -s build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino
+          test -s build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino.receipt.json
+          test -s build/ATOM_MATRIX_Pyramid_JanusVoice/JanusPyramid117121DSP.h
+          test -s build/ATOM_MATRIX_Pyramid_JanusVoice/JanusPyramid117121Profile.h
+          grep -q 'JanusPyramid117121DSP janusVoiceDsp' build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino
+          grep -q 'janusVoiceProcessChunk(chunk.mono, chunk.frames);' build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino
+          grep -q 'PYR=0..100' build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino
+
+      - name: Upload Arduino source bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: JANUS-Echo-Pyramid-v0.3-ESP32-r2-source
+          path: build/ATOM_MATRIX_Pyramid_JanusVoice/
+          if-no-files-found: error
+          retention-days: 30
