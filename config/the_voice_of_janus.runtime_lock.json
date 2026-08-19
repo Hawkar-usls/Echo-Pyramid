@@ -14,13 +14,13 @@
   "embedded_implementation": {
     "revision": "ESP32-r2",
     "voice_contract": "config/voice_contract.json",
-    "voice_contract_blob_sha": "c81c08700bfb3d2cf3729c0deb4ee9c51f0a3290",
+    "voice_contract_blob_sha": "a29a05a0b853f9475a191566538c60aeeadda41b",
     "profile_header": "firmware/JanusPyramid117121Profile.h",
     "profile_header_blob_sha": "463e797c64a66650bb199a451e43195f6b1afd44",
     "dsp_header": "firmware/JanusPyramid117121DSP.h",
     "dsp_header_blob_sha": "bdd535d2a6289ab442fd35f45035549d425c8eaf",
     "composer": "tools/compose_swarm_firmware.py",
-    "composer_blob_sha": "2dcb3fd50ae988368f6aee43b61139fd6688b688"
+    "composer_blob_sha": "e6d886c76a45c8b7210f6e58c48a0fc5bfb0d531"
   },
   "signal_contract": "ORDINARY_AUDIO_PCM -> SAME_SOURCE_AUDIO_WITH_PYRAMID_ACOUSTIC_COLORATION",
   "authority_split": {
@@ -33,6 +33,8 @@
     "language_parameters_changed": false,
     "runtime_depth_control_added": true,
     "runtime_budget_telemetry_added": true,
+    "local_usb_tuning_added": true,
+    "local_usb_tuning_is_network_control": false,
     "room_tail_decimation": 4,
     "source_delay_damping": 0.22,
     "embedded_delay_damping": 0.00234256,
@@ -42,6 +44,7 @@
     "DO_NOT_SYNTHESIZE_REPLACEMENT_TONES_FOR_SOURCE_AUDIO",
     "DO_NOT_CHANGE_117_121_LANGUAGE_PARAMETERS_WITHOUT_EXPLICIT_LANGUAGE_VERSION_BUMP",
     "EMBEDDED_PORT_REVISIONS_MUST_HAVE_DISTINCT_REVISION_IDS",
+    "LOCAL_USB_TUNING_MUST_NOT_BECOME_UNAUTHENTICATED_NETWORK_CONTROL",
     "TTS_TIMBRE_CHANGES_MUST_NOT_CHANGE_PYRAMID_LANGUAGE_PARAMETERS",
     "MIC_MUSIC_TTS_AND_BLUETOOTH_PCM_SHARE_THE_SAME_ACOUSTIC_OPERATOR",
     "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR"
