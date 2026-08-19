@@ -59,6 +59,25 @@ def main() -> int:
     assert "JANUS_PYRAMID_DSP_OVER_BUDGET_TRIP" in out
     assert "janusVoiceDsp.begin(EP_SAMPLE_RATE)" in out
     assert "janusVoiceDsp.setAmountPercent(JANUS_PYRAMID_LANGUAGE_AMOUNT)" in out
+
+    # Cross-core control invariant: Serial/main loop queues requests, janus_audio
+    # consumes them at a PCM block boundary before touching DSP state.
+    assert "portMUX_TYPE janusVoiceControlMux" in out
+    assert "janusVoicePendingEnable" in out
+    assert "janusVoicePendingDepth" in out
+    assert "janusVoicePendingClearFailsafe" in out
+    assert "janusVoiceQueueControl" in out
+    assert "janusVoicePendingSnapshot" in out
+    assert "janusVoiceApplyPendingAtBlockBoundary();" in out
+    assert "janusVoiceQueueControl(0, -1, false);" in out
+    assert "janusVoiceQueueControl(1, -1, true);" in out
+    assert "janusVoiceQueueControl(-1, (int16_t)value, false);" in out
+    assert "HARD_BYPASS_QUEUED" in out
+    assert "ENABLE_AND_FAILSAFE_CLEAR_QUEUED" in out
+    assert "DEPTH_QUEUED" in out
+    assert "pending_enable" in out
+    assert "pending_depth" in out
+
     assert "janusVoiceProcessChunk(chunk.mono, chunk.frames);" in out
     assert "janusVoiceSafetyTick();" in out
     assert "janusVoiceSerialControlTick();" in out
@@ -71,17 +90,26 @@ def main() -> int:
     assert "PYR=OFF" in out
     assert "PYR=ON" in out
     assert "PYR?" in out
-    assert "ENABLED_FAILSAFE_CLEARED" in out
     assert "dsp_ema_us" in out
+    assert out.index("janusVoiceApplyPendingAtBlockBoundary();") < out.index(
+        "janusVoiceDsp.processInPlace(pcm, frames);"
+    )
     assert out.index("janusVoiceProcessChunk(chunk.mono, chunk.frames);") < out.index(
         "ep.write(chunk.mono, chunk.frames);"
     )
     assert out.index("janusVoiceSafetyTick();") < out.index("serialStatus();")
     assert out.index("janusVoiceSerialControlTick();") < out.index("serialStatus();")
 
+    # Serial parser itself must not directly reset/toggle the DSP object.
+    usb_start = out.index("static void janusVoiceApplySerialCommand")
+    usb_end = out.index("static void janusVoiceSerialControlTick")
+    usb_command_body = out[usb_start:usb_end]
+    assert "janusVoiceDsp.setEnabled" not in usb_command_body
+    assert "janusVoiceDsp.setAmountPercent" not in usb_command_body
+
     # Future base firmware may legitimately own the console. Default compose must
     # then stop instead of stealing bytes. Explicit no-USB mode keeps DSP,
-    # telemetry, and the autonomous audio-budget failsafe.
+    # telemetry, the control mailbox, and autonomous audio-budget failsafe.
     serial_owner = BASE.replace(
         "void serialStatus() {}",
         "void serialStatus() { if (Serial.available() > 0) { (void)Serial.read(); } }",
@@ -93,6 +121,7 @@ def main() -> int:
     assert "#include <stdlib.h>" not in no_usb
     assert "#include <string.h>" not in no_usb
     assert "janusVoiceProcessChunk(chunk.mono, chunk.frames);" in no_usb
+    assert "janusVoiceApplyPendingAtBlockBoundary();" in no_usb
     assert "janusVoiceSafetyTick();" in no_usb
     assert "janusVoiceStatusTick();" in no_usb
     assert "JANUS_PYRAMID_DSP_FAILSAFE" in no_usb
