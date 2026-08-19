@@ -55,23 +55,33 @@ def main() -> int:
     assert "#include <string.h>" in out
     assert "JanusPyramid117121DSP janusVoiceDsp;" in out
     assert "JANUS_PYRAMID_LANGUAGE_AMOUNT" in out
+    assert "JANUS_PYRAMID_DSP_FAILSAFE" in out
+    assert "JANUS_PYRAMID_DSP_OVER_BUDGET_TRIP" in out
     assert "janusVoiceDsp.begin(EP_SAMPLE_RATE)" in out
     assert "janusVoiceDsp.setAmountPercent(JANUS_PYRAMID_LANGUAGE_AMOUNT)" in out
     assert "janusVoiceProcessChunk(chunk.mono, chunk.frames);" in out
+    assert "janusVoiceSafetyTick();" in out
     assert "janusVoiceSerialControlTick();" in out
     assert "janusVoiceStatusTick();" in out
+    assert "janusVoiceBudgetTrip" in out
+    assert "janusVoiceOverBudgetStreak" in out
+    assert "DSP_OVER_BUDGET" in out
+    assert "DRY_BYPASS" in out
     assert "PYR=0..100" in out
     assert "PYR=OFF" in out
     assert "PYR=ON" in out
     assert "PYR?" in out
+    assert "ENABLED_FAILSAFE_CLEARED" in out
     assert "dsp_ema_us" in out
     assert out.index("janusVoiceProcessChunk(chunk.mono, chunk.frames);") < out.index(
         "ep.write(chunk.mono, chunk.frames);"
     )
+    assert out.index("janusVoiceSafetyTick();") < out.index("serialStatus();")
     assert out.index("janusVoiceSerialControlTick();") < out.index("serialStatus();")
 
     # Future base firmware may legitimately own the console. Default compose must
-    # then stop instead of stealing bytes. Explicit no-USB mode keeps DSP/telemetry.
+    # then stop instead of stealing bytes. Explicit no-USB mode keeps DSP,
+    # telemetry, and the autonomous audio-budget failsafe.
     serial_owner = BASE.replace(
         "void serialStatus() {}",
         "void serialStatus() { if (Serial.available() > 0) { (void)Serial.read(); } }",
@@ -83,7 +93,10 @@ def main() -> int:
     assert "#include <stdlib.h>" not in no_usb
     assert "#include <string.h>" not in no_usb
     assert "janusVoiceProcessChunk(chunk.mono, chunk.frames);" in no_usb
+    assert "janusVoiceSafetyTick();" in no_usb
     assert "janusVoiceStatusTick();" in no_usb
+    assert "JANUS_PYRAMID_DSP_FAILSAFE" in no_usb
+    assert "DSP_OVER_BUDGET" in no_usb
     assert "DISABLED_BY_COMPOSER" in no_usb
 
     expect_fail(BASE.replace("#include <M5EchoPyramid.h>\n", ""), "include")
