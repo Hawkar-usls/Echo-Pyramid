@@ -1,6 +1,6 @@
 {
   "schema": "janus.echo_pyramid.voice_contract.v2",
-  "version": "2.3",
+  "version": "2.4",
   "node": {
     "repository": "Hawkar-usls/Echo-Pyramid",
     "hardware": "M5Stack Echo Pyramid A167 + Atom Matrix",
@@ -96,6 +96,10 @@
     "local_usb_control": {
       "network_io": false,
       "transport": "USB_SERIAL_115200_EXISTING_CONSOLE",
+      "default": "ENABLED_ONLY_IF_BASE_FIRMWARE_DOES_NOT_CONSUME_SERIAL_INPUT",
+      "ownership_guard": "COMPOSER_FAILS_CLOSED_IF_SERIAL_INPUT_OWNER_IS_DETECTED",
+      "explicit_disable_option": "--no-usb-control",
+      "no_usb_mode_keeps": ["PYRAMID_DSP", "REALTIME_DSP_TELEMETRY"],
       "commands": {
         "PYR?": "REPORT_CURRENT_STATE",
         "PYR=0..100": "SET_SPATIAL_DEPTH_PERCENT",
@@ -123,6 +127,7 @@
     "DO_NOT_REPLACE_SOURCE_AUDIO_WITH_SYNTHETIC_TONES",
     "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY",
     "KEEP_DRY_PATH_FOR_INTELLIGIBILITY",
+    "SERIAL_INPUT_HAS_ONE_OWNER",
     "LOCAL_USB_TUNING != NETWORK_CONTROL",
     "LANGUAGE_V0_3 != EMBEDDED_REVISION_ESP32_R2",
     "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR",
