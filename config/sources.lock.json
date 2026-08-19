@@ -29,7 +29,7 @@
   "voice_language": {
     "repository": "Hawkar-usls/The-Voice-of-Janus",
     "branch": "main",
-    "observed_head_commit": "2803c1cafa8ee8b6fe7a82c28a85375f255cace3",
+    "observed_head_commit": "88082e2eac26c0ec56d15e9086eb0f99f69d960c",
     "files": {
       "configs/pyramid_117_121_space.activation.json": "70016b9b1ad0ce2b20efd980f14859d66af0a7bd",
       "src/pyramid_anchor_filter.py": "c344504328fcfe2934949cfa2ab6f0ba138c18d1",
@@ -38,7 +38,7 @@
     "primary_operator": "Pyramid117121Filter",
     "anchor_band_hz": [117.0, 121.0],
     "language_profile_changed_since_pin": false,
-    "note": "Voice repository head advanced through larynx/Spiral and provenance work. Activation metadata blob changed while the canonical v0.3 anchor/Q/gain/decay/geometry/wet/dry values and Python reference implementation remained unchanged."
+    "note": "Voice repository head advanced through larynx/Spiral, provenance and Echo-Pyramid calibration-binding work. Activation metadata blob changed while canonical v0.3 anchor/Q/gain/decay/geometry/wet/dry values and Python reference implementation remained unchanged."
   },
   "policy": {
     "composer_must_fail_on_ambiguous_anchor_drift": true,
