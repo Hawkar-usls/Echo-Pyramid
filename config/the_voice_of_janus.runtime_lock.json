@@ -3,7 +3,7 @@
   "status": "ACTIVE_PINNED_LANGUAGE_RUNTIME_WITH_AIDAR_EUGENE_SPIRAL",
   "physical_repository": "Hawkar-usls/Echo-Pyramid",
   "language_repository": "Hawkar-usls/The-Voice-of-Janus",
-  "observed_voice_head_commit": "2803c1cafa8ee8b6fe7a82c28a85375f255cace3",
+  "observed_voice_head_commit": "88082e2eac26c0ec56d15e9086eb0f99f69d960c",
   "canonical_language": {
     "activation": "configs/pyramid_117_121_space.activation.json",
     "activation_blob_sha": "70016b9b1ad0ce2b20efd980f14859d66af0a7bd",
@@ -37,11 +37,7 @@
     "voice_runner": "src/nexus_voice_spiral_runner.py",
     "voice_config": "configs/osiris_aidar_eugene_spiral.v1.json",
     "habitat_gate": "habitat/state/NEXUS_VOICE_SPIRAL_GATE_v2.8.json",
-    "layers": [
-      "LAYER_A_AIDAR",
-      "LAYER_B_EUGENE",
-      "SPIRAL_COMPARISON"
-    ],
+    "layers": ["LAYER_A_AIDAR", "LAYER_B_EUGENE", "SPIRAL_COMPARISON"],
     "only_larynx_changes": true,
     "pyramid_language_changes_between_layers": false,
     "automatic_winner_selection": false,
