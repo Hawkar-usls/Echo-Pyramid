@@ -3,7 +3,7 @@
   "status": "ACTIVE_PINNED_LANGUAGE_RUNTIME",
   "physical_repository": "Hawkar-usls/Echo-Pyramid",
   "language_repository": "Hawkar-usls/The-Voice-of-Janus",
-  "observed_voice_head_commit": "27cfc812029f0b6a4a40cd8cf77404b719fea166",
+  "observed_voice_head_commit": "f8567b16b85e8da0a74083cd7a9c2162547d2600",
   "canonical_language": {
     "activation": "configs/pyramid_117_121_space.activation.json",
     "activation_blob_sha": "3d3203b53bf181656eac815235f1238ef7c4e57a",
