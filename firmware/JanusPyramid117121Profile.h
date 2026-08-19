@@ -32,13 +32,20 @@ static const float kSpeedOfSoundMps = 343.0f;
 static const float kGeometryLxM = 10.45f;
 static const float kGeometryLyM = 5.20f;
 static const float kGeometryLzM = 5.80f;
-static const float kDelayDamping = 0.22f;
+
+// Python reference FeedbackDelay damping at full 44.1 kHz.
+static const float kSourceDelayDamping = 0.22f;
 
 // Embedded room-tail optimization: the anchor path remains full-rate 44.1 kHz.
 // Only the low-bandwidth feedback room tail is evaluated every four samples.
 // Delay lengths preserve the same delay times used by the Python v0.3 operator.
 static const uint8_t kRoomDecimation = 4;
 static const uint32_t kRoomSampleRateHz = kSampleRateHz / kRoomDecimation;  // 11025 Hz
+
+// One embedded room update spans four reference-rate samples. For the recurrence
+// state[n] = (1-d)*x[n] + d*state[n-1], use d_embedded = d_source^4 so the
+// persistence pole has approximately the same wall-clock decay under 4x decimation.
+static const float kEmbeddedDelayDamping = 0.00234256f;  // 0.22^4
 
 static const size_t kDelayLxSamples = 672;     // round((2*10.45/343)*11025)
 static const size_t kDelayLySamples = 334;     // round((2*5.20/343)*11025)
