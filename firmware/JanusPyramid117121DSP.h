@@ -11,6 +11,7 @@ class JanusPyramid117121DSP {
  public:
   JanusPyramid117121DSP()
       : ready_(false), enabled_(true), room_phase_(0), room_hold_(0.0f),
+        amount_(1.0f), target_amount_(1.0f),
         eq_x1_(0.0f), eq_x2_(0.0f), eq_y1_(0.0f), eq_y2_(0.0f) {
     reset();
   }
@@ -66,6 +67,22 @@ class JanusPyramid117121DSP {
   uint32_t sampleRateHz() const { return janus_pyramid_117121::kSampleRateHz; }
   size_t roomDelayBytes() const { return janus_pyramid_117121::kDelayTotalSamples * sizeof(int16_t); }
 
+  // Runtime spatial depth. 100 = canonical Pyramid Language v0.3.
+  // 0 = original source audio. Changes are linearly ramped across the next
+  // processed block to avoid an abrupt discontinuity/click.
+  void setAmountPercent(uint8_t percent) {
+    if (percent > 100U) percent = 100U;
+    target_amount_ = static_cast<float>(percent) * 0.01f;
+  }
+
+  uint8_t targetAmountPercent() const {
+    return static_cast<uint8_t>(target_amount_ * 100.0f + 0.5f);
+  }
+
+  uint8_t currentAmountPercent() const {
+    return static_cast<uint8_t>(amount_ * 100.0f + 0.5f);
+  }
+
   void reset() {
     eq_x1_ = eq_x2_ = eq_y1_ = eq_y2_ = 0.0f;
     for (size_t i = 0; i < 3; ++i) {
@@ -87,7 +104,11 @@ class JanusPyramid117121DSP {
     if (!enabled_ || samples == nullptr || frames == 0) return;
     if (!ready_ && !begin()) return;
 
+    const float amount_step = (target_amount_ - amount_) / static_cast<float>(frames);
+
     for (size_t frame = 0; frame < frames; ++frame) {
+      amount_ += amount_step;
+
       const float dry_input = static_cast<float>(samples[frame]) / 32768.0f;
       const float colored = processEq(dry_input);
 
@@ -108,10 +129,17 @@ class JanusPyramid117121DSP {
 
       const float wet_signal =
           kWetColoredWeight * colored + kWetAnchorWeight * anchor + kWetRoomWeight * room_hold_;
-      const float mixed = kDry * dry_input + kWet * wet_signal;
-      const float limited = fastTanh(mixed);
-      samples[frame] = floatToPcm16(limited);
+      const float effect_mixed = kDry * dry_input + kWet * wet_signal;
+      const float effect_limited = fastTanh(effect_mixed);
+
+      // Crossfade the entire acoustic-space operator against the untouched source.
+      // This makes "amount" a true spatial-depth control rather than a second gain knob.
+      const float output = dry_input + amount_ * (effect_limited - dry_input);
+      samples[frame] = floatToPcm16(output);
     }
+
+    // Eliminate tiny accumulated float error at the end of the ramp.
+    amount_ = target_amount_;
   }
 
  private:
@@ -195,6 +223,8 @@ class JanusPyramid117121DSP {
   bool enabled_;
   uint8_t room_phase_;
   float room_hold_;
+  float amount_;
+  float target_amount_;
 
   float eq_b0_ = 0.0f;
   float eq_b1_ = 0.0f;
