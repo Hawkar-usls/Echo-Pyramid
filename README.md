@@ -4,58 +4,93 @@
 
 It binds three existing branches into one reproducible path:
 
-1. **Hardware layer** — upstream `m5stack/M5Echo-Pyramid` (ES7210 mic/AEC, ES8311 codec, AW87559 amplifier, SI5351 audio clock, STM32 touch/RGB).
-2. **Swarm body** — `Hawkar-usls/janus-distributed-ai-swarm/firmware/pyramid/ATOM_MATRIX_Pyramid.ino` (Bluetooth A2DP, approval gate, touch/UI, ESP-NOW worker, telemetry/mining).
-3. **Voice language** — `Hawkar-usls/The-Voice-of-Janus` (geometry -> modal solver -> evidence gate -> deterministic acoustic DSP).
+1. **Hardware** — upstream `m5stack/M5Echo-Pyramid`: ES7210 microphone/AEC, ES8311 codec, AW87559 amplifier, SI5351 clock, STM32 touch/RGB.
+2. **Swarm body** — `Hawkar-usls/janus-distributed-ai-swarm/firmware/pyramid/ATOM_MATRIX_Pyramid.ino`: A2DP, approval gate, touch/UI, ESP-NOW worker and telemetry.
+3. **Voice language** — `Hawkar-usls/The-Voice-of-Janus`: deterministic Pyramid Language DSP with explicit evidence boundaries.
 
-## Core rule
+## Current physical voice path
 
 ```text
-HOST/TTS/BT PCM
-  -> existing JANUS safe gain + mono bridge
-  -> JANUS Pyramid Language modal DSP
-  -> M5EchoPyramid::write()
-  -> ES8311 -> AW87559 -> 5 W speaker
+HOST / TTS / Bluetooth PCM
+        |
+        v
+existing JANUS safe gain + mono queue
+        |
+        v
+119 Hz peaking EQ
+        |
+        v
+117 / 119 / 121 Hz resonator bank
+        |
+        v
+geometry-derived room tail
+        |
+        v
+dry/wet mix -> soft limiter
+        |
+        v
+M5EchoPyramid::write()
+        |
+        v
+ES8311 -> AW87559 -> speaker
 ```
 
-The voice layer deliberately runs **inside the existing PCM bridge immediately before `ep.write()`**. It does not allocate a second I2S peripheral, does not replace the M5Stack codec/AEC path, and does not take ownership away from the existing BT/ESP-NOW state machine.
+The default physical operator is now **Pyramid Language v0.3 — 117–121 Hz anchored space**, matching the current `The-Voice-of-Janus` activation and `Pyramid117121Filter` reference implementation.
 
-## Frequency profile
+The Voice layer runs in the existing `janus_audio` playback task **immediately before `ep.write()`**. It does not create another I2S path and does not move work into the Bluetooth callback.
 
-The default embedded profile is generated from the current `The-Voice-of-Janus` illustrative King's Chamber model (`Lx=10.45 m`, `Ly=5.20 m`, `Lz=5.80 m`, `c=343 m/s`) using the same rectangular-room modal equation and octave-translation rule. The live ESP32 profile uses the first six unique render modes:
-
-| physical Hz | render Hz | octave |
-|---:|---:|---:|
-| 16.411483 | 65.645933 | x4 |
-| 29.568966 | 59.137931 | x2 |
-| 32.980769 | 65.961538 | x2 |
-| 33.818050 | 67.636100 | x2 |
-| 36.838403 | 36.838403 | x1 |
-| 44.177719 | 44.177719 | x1 |
-
-Default DSP contract: `44.1 kHz`, six parallel damped two-pole resonators, `decay=0.32 s`, `wet=0.72`, `dry=0.62`, `output_gain=0.85`.
-
-## Scientific boundary
-
-This repository does **not** claim that a pyramid has one universal or magical frequency. A chamber supports many acoustic modes. The default King's Chamber profile is explicitly `ILLUSTRATIVE_MODEL_BASED`; predicted air-acoustic modes are not equivalent to measured historical resonances or structural vibration modes.
+## Embedded 117–121 profile
 
 ```text
-MODEL_BASED_RECONSTRUCTION != MEASURED_HISTORICAL_SOUND
+anchor band:          117–121 Hz
+center:               119 Hz
+Q:                    29.75
+peaking gain:         +11.5 dB
+anchor decay:         1.65 s
+resonators:           117 / 119 / 121 Hz
+room geometry:        10.45 x 5.20 x 5.80 m
+speed of sound:       343 m/s
+room decay:           0.78
+wet / dry:            0.72 / 0.62
+main sample rate:     44.1 kHz
+```
+
+For classic ESP32 SRAM safety, the EQ and 117/119/121 resonators stay at full 44.1 kHz while only the geometry-derived feedback tail is evaluated at 11.025 kHz. Its four delay lines retain the same delay times but use static PCM16 storage: **3,466 bytes** instead of roughly 27.7 KB of full-rate float delay storage.
+
+## Evidence boundary
+
+`117–121 Hz` is a **JANUS project anchor band**, not a claim that a pyramid has one universal magical frequency. The current upstream language config itself marks the effect model-based and says no measured chamber impulse response or intentional ancient tuning is established.
+
+```text
+117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY
+MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR
+PREDICTED_ACOUSTIC_MODEL != PROOF_OF_ANCIENT_INTENT
 METAPHOR != PHYSICS
 ```
 
-When measured impulse responses or verified chamber dimensions become available, add them as a new evidence-tagged profile rather than silently replacing the model.
+The earlier six-mode rectangular-room bank remains in `JanusPyramidDSP.h` as a **reference / legacy model**, but it is no longer the default composer target.
 
 ## Repository layout
 
 ```text
 firmware/
-  JanusPyramidVoiceProfile.h   provenance + embedded mode bank
-  JanusPyramidDSP.h            real-time bounded modal resonator
-  Echo_Pyramid_Janus_Demo.ino  minimal hardware/audio smoke test
+  JanusPyramid117121Profile.h  current Pyramid Language v0.3 contract
+  JanusPyramid117121DSP.h      embedded 117–121 operator
+  JanusPyramidVoiceProfile.h   earlier geometry-modal profile
+  JanusPyramidDSP.h            earlier six-mode reference DSP
+  Echo_Pyramid_Janus_Demo.ino  low-volume push-to-talk hardware smoke test
+
+config/
+  voice_contract.json          machine-readable physical voice contract
+  sources.lock.json            pinned source commits/blob SHAs
 
 tools/
-  compose_swarm_firmware.py    injects the voice layer into the canonical swarm firmware
+  compose_swarm_firmware.py    fail-closed integration into canonical swarm .ino
+  verify_profile.py            legacy modal profile verifier
+
+tests/
+  test_anchor_dsp.cpp          primary embedded operator regression test
+  test_dsp.cpp                 legacy modal regression test
 
 docs/
   ARCHITECTURE.md
@@ -72,19 +107,17 @@ python tools/compose_swarm_firmware.py \
   build/ATOM_MATRIX_Pyramid_JanusVoice.ino
 ```
 
-The composer is fail-closed: it checks the exact integration anchors (`M5EchoPyramid`, `M5EchoPyramid ep`, `initPyramid()`, and `ep.write(chunk.mono, chunk.frames)`) and refuses to emit a firmware file if the swarm source drifted enough to make the insertion ambiguous.
+The composer checks four exact integration anchors and refuses ambiguous source drift. It copies the two v0.3 headers beside the generated `.ino` and emits a SHA-256 receipt.
 
 ## Hardware target
 
 - M5Stack **Atom Matrix / classic ESP32-PICO-D4**
 - M5Stack **Echo Pyramid A167**
-- sample rate: **44.1 kHz**
-- existing Atom Matrix pin profile from the swarm firmware is preserved
+- **44.1 kHz** physical audio path
+- existing swarm pin mapping, BT approval gate, phone-owned safe gain, ESP-NOW lifecycle and audio-priority scheduling remain authoritative
 
-## Upstream
+## Tests
 
-- Hardware library: `m5stack/M5Echo-Pyramid` — MIT
-- Voice semantics/DSP contract: `Hawkar-usls/The-Voice-of-Janus`
-- Canonical swarm firmware: `Hawkar-usls/janus-distributed-ai-swarm`
+GitHub Actions checks both the current v0.3 embedded operator and the earlier modal reference. The primary test verifies 44.1 kHz admission, bounded static delay memory, silence stability, non-transparent processing of a 119 Hz carrier and bypass transparency.
 
-JANUS keeps the hardware measurable: every embedded frequency has a provenance path back to geometry, transform rule, and evidence status.
+JANUS keeps every acoustic transformation traceable back to a source config, implementation, evidence status and source SHA.
