@@ -36,13 +36,31 @@ jobs:
 
       - name: Verify composed bundle
         run: |
-          test -s build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino
-          test -s build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino.receipt.json
-          test -s build/ATOM_MATRIX_Pyramid_JanusVoice/JanusPyramid117121DSP.h
-          test -s build/ATOM_MATRIX_Pyramid_JanusVoice/JanusPyramid117121Profile.h
-          grep -q 'JanusPyramid117121DSP janusVoiceDsp' build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino
-          grep -q 'janusVoiceProcessChunk(chunk.mono, chunk.frames);' build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino
-          grep -q 'PYR=0..100' build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino
+          set -euo pipefail
+          B=build/ATOM_MATRIX_Pyramid_JanusVoice
+          test -s "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
+          test -s "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino.receipt.json"
+          test -s "$B/JanusPyramid117121DSP.h"
+          test -s "$B/JanusPyramid117121Profile.h"
+          grep -q 'JanusPyramid117121DSP janusVoiceDsp' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
+          grep -q 'janusVoiceProcessChunk(chunk.mono, chunk.frames);' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
+          grep -q 'janusVoiceSafetyTick();' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
+          grep -q 'PYRAMID_LANGUAGE_FAILSAFE' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
+          grep -q 'JANUS_PYRAMID_DSP_OVER_BUDGET_TRIP 3' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
+          grep -q 'PYR=0..100' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          p = Path('build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino.receipt.json')
+          r = json.loads(p.read_text(encoding='utf-8'))
+          assert r['schema'] == 'janus.echo_pyramid.compose_receipt.v2.5'
+          assert r['profile_id'].endswith('/ESP32-r2')
+          assert r['real_time_budget']['failsafe']['enabled_by_default'] is True
+          assert r['real_time_budget']['failsafe']['consecutive_blocks'] == 3
+          assert r['real_time_budget']['failsafe']['action'] == 'DRY_BYPASS_UNTIL_EXPLICIT_PYR_ON_OR_REBOOT'
+          assert r['usb_control']['enabled'] is True
+          print('COMPOSED RECEIPT PASS')
+          PY
 
       - name: Upload Arduino source bundle
         uses: actions/upload-artifact@v4
