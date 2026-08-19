@@ -21,23 +21,29 @@
       "#include <M5EchoPyramid.h>",
       "M5EchoPyramid ep;",
       "  initPyramid();",
-      "        ep.write(chunk.mono, chunk.frames);"
-    ]
+      "        ep.write(chunk.mono, chunk.frames);",
+      "  serialStatus();"
+    ],
+    "observed_serial_input_owner": false
   },
   "voice_language": {
     "repository": "Hawkar-usls/The-Voice-of-Janus",
     "branch": "main",
-    "observed_head_commit": "f63b628ff3e20b78dfc29042454e737e1a7b7f2a",
+    "observed_head_commit": "baf3491cfea810c99a0d78adc691ebfe5272304f",
     "files": {
       "configs/pyramid_117_121_space.activation.json": "3d3203b53bf181656eac815235f1238ef7c4e57a",
       "src/pyramid_anchor_filter.py": "c344504328fcfe2934949cfa2ab6f0ba138c18d1",
       "configs/osiris_origin_prime_recitation.v2.json": "e04a172dff903d31751b0b49cff2644788731dca"
     },
     "primary_operator": "Pyramid117121Filter",
-    "anchor_band_hz": [117.0, 121.0]
+    "anchor_band_hz": [117.0, 121.0],
+    "language_profile_changed_since_pin": false,
+    "note": "Voice repository head advanced through larynx/model work while the pinned Pyramid Language v0.3 activation and reference implementation blobs remained unchanged."
   },
   "policy": {
     "composer_must_fail_on_ambiguous_anchor_drift": true,
+    "composer_must_fail_if_usb_control_conflicts_with_existing_serial_input_owner": true,
+    "no_usb_control_mode_may_preserve_dsp_and_telemetry": true,
     "do_not_silently_upgrade_language_profile": true,
     "new_measured_profiles_must_preserve_old_model_profiles": true
   }
