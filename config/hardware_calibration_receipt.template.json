@@ -1,0 +1,47 @@
+{
+  "schema": "janus.echo_pyramid.hardware_calibration_receipt.v1",
+  "status": "UNMEASURED_TEMPLATE",
+  "language_profile": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
+  "embedded_revision": "ESP32-r2",
+  "calibration_contract": "config/hardware_calibration_contract.json",
+  "measurement": {
+    "date": null,
+    "source_type": null,
+    "source_id_or_hash": null,
+    "phone_volume": null,
+    "microphone_or_measurement_device": null,
+    "microphone_distance_m": null,
+    "orientation": null,
+    "placement_notes": null,
+    "sample_rate_hz": 44100,
+    "measured_response_artifact": null,
+    "measured_response_sha256": null
+  },
+  "realtime": {
+    "depth_percent": null,
+    "dsp_ema_us": null,
+    "dsp_peak_us": null,
+    "budget_us": 5804,
+    "failsafe_trips": null,
+    "audio_drop_delta": null,
+    "free_heap_min": null,
+    "bt_disconnects": null,
+    "audible_stutter": null
+  },
+  "physical_calibration": {
+    "preferred_runtime_depth_percent": null,
+    "output_trim_percent": 100,
+    "speaker_compensation_eq_enabled": false,
+    "speaker_compensation_eq": [],
+    "latency_compensation_samples": 0,
+    "protection_ceiling": null
+  },
+  "language_retune": {
+    "candidate": false,
+    "candidate_changes": {},
+    "applied_to_v0_3": false,
+    "rule": "Any change to anchor frequencies, Q, anchor gain, decay, room decay, wet, dry, resonators or geometry requires a new language version"
+  },
+  "judgement": "PENDING_DEVICE_MEASUREMENT",
+  "notes": []
+}
