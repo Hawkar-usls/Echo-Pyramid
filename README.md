@@ -49,6 +49,9 @@ dry/wet mix -> soft limiter
 runtime Pyramid-space depth crossfade
         |
         v
+real-time audio budget guard
+        |
+        v
 M5EchoPyramid::write()
         |
         v
@@ -78,7 +81,7 @@ The current bounded physical implementation is:
 PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32-r2
 ```
 
-`ESP32-r2` is an implementation revision, not a new acoustic-language version. It adds runtime depth control, real-time timing telemetry, corrected damping for the decimated room tail and fail-closed local USB tuning without changing the canonical 117–121 Hz language parameters.
+`ESP32-r2` is an implementation revision, not a new acoustic-language version. It adds runtime depth control, real-time timing telemetry, corrected damping for the decimated room tail, a dry audio-budget failsafe and fail-closed local USB tuning without changing the canonical 117–121 Hz language parameters.
 
 ## Embedded 117–121 profile
 
@@ -122,18 +125,43 @@ The physical DSP exposes `setAmountPercent(0..100)`:
 
 Depth changes ramp over the next PCM block to avoid an abrupt discontinuity/click.
 
+## Audio-budget failsafe
+
+The effect is subordinate to clean audio transport:
+
+```text
+AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT
+```
+
+At 44.1 kHz each 256-frame PCM block represents roughly **5804 µs**. `ESP32-r2` measures the actual DSP processing time per block. The default guard is:
+
+```text
+JANUS_PYRAMID_DSP_FAILSAFE = 1
+JANUS_PYRAMID_DSP_OVER_BUDGET_TRIP = 3
+```
+
+If three consecutive processed blocks require at least their full PCM time budget, the physical layer trips to **dry bypass**. Future queued PCM is left untouched immediately; resonator/delay state is then reset from the main loop rather than performing a large reset inside `janus_audio`.
+
+Expected event:
+
+```text
+PYRAMID_LANGUAGE_FAILSAFE | DRY_BYPASS reason=DSP_OVER_BUDGET ...
+```
+
+There is deliberately no automatic parameter mutation and no automatic retry loop. The canonical 117/119/121 Hz language remains unchanged. An explicit `PYR=ON` or a reboot clears the trip.
+
 ## USB A/B tuning on the real Pyramid
 
 When the base swarm firmware does not already consume Serial input, the composer enables a tiny **local USB-only** tuning console:
 
 ```text
-PYR?        report current DSP state
+PYR?        report current DSP/failsafe state
 PYR=0       dry output, DSP state still running
 PYR=25      25% Pyramid-space depth
 PYR=50      50% Pyramid-space depth
 PYR=100     full Pyramid Language v0.3
 PYR=OFF     hard bypass DSP
-PYR=ON      enable DSP again
+PYR=ON      clear failsafe trip and enable DSP
 ```
 
 This is intentionally not network control. It exists so the same voice/music passage can be compared dry vs processed without reflashing or changing the phone volume.
@@ -147,16 +175,18 @@ python tools/compose_swarm_firmware.py \
   --no-usb-control
 ```
 
-That mode keeps Pyramid Language DSP and timing telemetry but does not consume Serial input.
+That mode keeps Pyramid Language DSP, timing telemetry and the autonomous audio-budget failsafe but does not consume Serial input.
 
-## Real-time budget telemetry
+## Real-time telemetry
 
-A 256-frame block at 44.1 kHz has about **5804 microseconds** of audio time. The composed firmware measures the Pyramid Language processing time for every block and emits a 10-second summary:
+The composed firmware emits a 10-second status line:
 
 ```text
 PYRAMID_LANGUAGE |
   enabled=1
   depth=100%
+  failsafe=0
+  trips=0
   anchor=117/119/121Hz
   dsp_ema_us=...
   dsp_peak_us=...
@@ -166,7 +196,7 @@ PYRAMID_LANGUAGE |
   heap=...
 ```
 
-This is the measurement gate for the real Atom Matrix. Host tests prove bounded code/state behavior; only device telemetry can tell us the real Bluetooth-era CPU margin on the physical ESP32.
+This is the decisive measurement gate for the real Atom Matrix. Host tests prove bounded code/state behavior; only device telemetry can tell us the real Bluetooth-era CPU margin on the physical ESP32.
 
 ## Compose the full swarm firmware
 
@@ -180,6 +210,16 @@ python tools/compose_swarm_firmware.py \
 
 The composer is fail-closed. It requires unique integration anchors, verifies Serial input ownership before enabling USB tuning, never overwrites the canonical swarm source, copies the two current DSP/profile headers beside the generated `.ino`, and emits a SHA-256 composition receipt.
 
+## Generated source bundle
+
+`.github/workflows/compose-firmware.yml` independently checks out the canonical swarm repository, verifies the pinned Pyramid sketch Git blob and integration anchors, composes the current physical runtime, validates the v2.5 receipt and uploads an Arduino source artifact named:
+
+```text
+JANUS-Echo-Pyramid-v0.3-ESP32-r2-source
+```
+
+The artifact contains the composed `.ino`, `JanusPyramid117121DSP.h`, `JanusPyramid117121Profile.h` and the composition receipt. The repository therefore does not need a second manually maintained 164-KB copy of the fast-moving swarm sketch.
+
 ## Provenance locks
 
 `config/sources.lock.json` pins the observed hardware/swarm/language source blobs.
@@ -190,7 +230,7 @@ The composer is fail-closed. It requires unique integration anchors, verifies Se
 - current upstream larynx pointer without treating the larynx as the language;
 - physical `ESP32-r2` contract/profile/DSP/composer blobs.
 
-`tools/verify_runtime_lock.py` recomputes actual Git blob SHAs for local physical files and fails CI on silent drift.
+`tools/verify_runtime_lock.py` recomputes actual Git blob SHAs for local physical files and fails CI on silent drift. `tools/verify_swarm_checkout.py` applies the same principle to a checked-out canonical swarm sketch before composition.
 
 ## Repository layout
 
@@ -210,6 +250,7 @@ config/
 tools/
   compose_swarm_firmware.py
   verify_runtime_lock.py
+  verify_swarm_checkout.py
   verify_profile.py
 
 tests/
@@ -219,6 +260,7 @@ tests/
 
 docs/
   ARCHITECTURE.md
+  HARDWARE_TEST_PROTOCOL.md
   SCIENTIFIC_BOUNDARY.md
 ```
 
@@ -243,13 +285,21 @@ METAPHOR != PHYSICS
 
 A future measured room response should be added as a distinct evidence-tagged profile rather than silently mutating this model.
 
-## Tests
+## Tests and current gate
 
 GitHub Actions is configured to gate the repository on:
 
 - pinned runtime-lock conformance;
-- fail-closed composer behavior, including Serial ownership and `--no-usb-control` mode;
+- fail-closed composer behavior, including Serial ownership, `--no-usb-control` and budget-failsafe injection;
 - current 117–121 DSP regression tests, including depth/bypass behavior and bounded static memory;
-- earlier six-mode reference regression tests.
+- earlier six-mode reference regression tests;
+- composition of a source bundle from the pinned canonical swarm sketch.
 
-The next decisive gate is physical: flash the composed firmware and read `dsp_ema_us`, `dsp_peak_us`, queue drops and free heap while the same Bluetooth track is A/B switched through `PYR=0/50/100`.
+The physical acceptance procedure is frozen in `docs/HARDWARE_TEST_PROTOCOL.md`. Until a real Atom Matrix + Echo Pyramid run provides timing, drop, heap and Bluetooth observations, status remains:
+
+```text
+CODE_PATH = IMPLEMENTED
+HOST_REGRESSION = IMPLEMENTED
+COMPOSE_PIPELINE = IMPLEMENTED
+PHYSICAL_REALTIME_GATE = PENDING_DEVICE_MEASUREMENT
+```
