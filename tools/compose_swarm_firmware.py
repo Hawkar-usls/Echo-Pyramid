@@ -14,7 +14,7 @@ import json
 import shutil
 from pathlib import Path
 
-PROFILE_ID = "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32"
+PROFILE_ID = "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32-r2"
 DEFAULT_AMOUNT_PERCENT = 100
 
 INCLUDE_ANCHOR = "#include <M5EchoPyramid.h>"
@@ -164,9 +164,11 @@ def main() -> int:
 
     out_raw = output.read_bytes()
     receipt = {
-        "schema": "janus.echo_pyramid.compose_receipt.v2.1",
+        "schema": "janus.echo_pyramid.compose_receipt.v2.2",
         "status": "PASS",
         "profile_id": PROFILE_ID,
+        "language_version": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
+        "embedded_revision": "ESP32-r2",
         "default_amount_percent": DEFAULT_AMOUNT_PERCENT,
         "base_path": str(base),
         "base_sha256": sha256_bytes(raw),
@@ -189,6 +191,8 @@ def main() -> int:
             "sample_rate_hz": 11025,
             "delay_storage": "PCM16_STATIC",
             "delay_bytes": 3466,
+            "source_damping": 0.22,
+            "time_equivalent_embedded_damping": 0.00234256,
         },
         "hard_rules": [
             "ORDINARY_AUDIO_IN -> PYRAMID_COLORED_AUDIO_OUT",
