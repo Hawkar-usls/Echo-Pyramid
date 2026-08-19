@@ -22,13 +22,13 @@
   "embedded_implementation": {
     "revision": "ESP32-r2",
     "voice_contract": "config/voice_contract.json",
-    "voice_contract_blob_sha": "d7a75317f82c5de4b5b5b8d2add7854dbbadac7f",
+    "voice_contract_blob_sha": "245abfb1ba0d84e655b873e6c41cea36de90e9e7",
     "profile_header": "firmware/JanusPyramid117121Profile.h",
     "profile_header_blob_sha": "463e797c64a66650bb199a451e43195f6b1afd44",
     "dsp_header": "firmware/JanusPyramid117121DSP.h",
     "dsp_header_blob_sha": "bdd535d2a6289ab442fd35f45035549d425c8eaf",
     "composer": "tools/compose_swarm_firmware.py",
-    "composer_blob_sha": "529eb25fc254385b1afedecf5477c8b1717eb2f8"
+    "composer_blob_sha": "f0883a65c400456afbd9e9fbf7a8c531f338e8c9"
   },
   "signal_contract": "ORDINARY_AUDIO_PCM -> SAME_SOURCE_AUDIO_WITH_PYRAMID_ACOUSTIC_COLORATION",
   "authority_split": {
@@ -44,6 +44,10 @@
     "audio_budget_failsafe_added": true,
     "audio_budget_failsafe_trip_blocks": 3,
     "audio_budget_failsafe_action": "DRY_BYPASS_UNTIL_PYR_ON_OR_REBOOT",
+    "dsp_mutable_state_owner": "JANUS_AUDIO_PLAYBACK_TASK",
+    "external_control_mailbox": "PORTMUX_GUARDED_REQUEST_MAILBOX",
+    "external_control_application_boundary": "NEXT_PCM_BLOCK",
+    "direct_cross_core_usb_dsp_mutation": false,
     "local_usb_tuning_added": true,
     "local_usb_tuning_is_network_control": false,
     "serial_input_ownership_guard": "FAIL_CLOSED",
@@ -57,6 +61,7 @@
     "DO_NOT_SYNTHESIZE_REPLACEMENT_TONES_FOR_SOURCE_AUDIO",
     "DO_NOT_CHANGE_117_121_LANGUAGE_PARAMETERS_WITHOUT_EXPLICIT_LANGUAGE_VERSION_BUMP",
     "EMBEDDED_PORT_REVISIONS_MUST_HAVE_DISTINCT_REVISION_IDS",
+    "DSP_MUTABLE_STATE_HAS_ONE_RUNTIME_OWNER",
     "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT",
     "SERIAL_INPUT_HAS_ONE_OWNER",
     "LOCAL_USB_TUNING_MUST_NOT_BECOME_UNAUTHENTICATED_NETWORK_CONTROL",
