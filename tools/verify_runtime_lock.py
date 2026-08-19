@@ -68,8 +68,13 @@ def main() -> int:
         raise AssertionError("profile header does not identify ESP32-r2")
     if "kAnchorCenterHz = 119.0f" not in profile_text:
         raise AssertionError("119 Hz anchor center missing from embedded profile")
+    if "kEmbeddedDelayDamping = 0.00234256f" not in profile_text:
+        raise AssertionError("time-equivalent decimated damping invariant missing")
 
     contract = json.loads((ROOT / str(embedded["voice_contract"])).read_text(encoding="utf-8"))
+    if contract.get("version") != "2.6":
+        raise AssertionError("voice contract must be physical contract v2.6")
+
     dsp = contract["primary_dsp"]
     if dsp.get("language_version") != canonical["profile_id"]:
         raise AssertionError("voice contract language version disagrees with runtime lock")
@@ -77,6 +82,33 @@ def main() -> int:
         raise AssertionError("voice contract embedded revision disagrees with runtime lock")
     if dsp.get("anchor_band_hz") != [117.0, 121.0]:
         raise AssertionError("voice contract anchor band drifted")
+    if dsp.get("anchor_center_hz") != 119.0:
+        raise AssertionError("voice contract anchor center drifted")
+
+    integration = contract["integration"]
+    ownership = integration["mutable_state_ownership"]
+    if ownership.get("owner") != "JANUS_AUDIO_PLAYBACK_TASK":
+        raise AssertionError("DSP mutable state must be owned by JANUS audio task")
+    if ownership.get("external_control_transport") != "PORTMUX_GUARDED_REQUEST_MAILBOX":
+        raise AssertionError("external DSP controls must use the portMUX mailbox")
+    if ownership.get("application_boundary") != "NEXT_PCM_BLOCK":
+        raise AssertionError("external DSP controls must apply at a PCM block boundary")
+    if ownership.get("usb_parser_direct_dsp_mutation") is not False:
+        raise AssertionError("USB parser must not mutate DSP state directly")
+
+    failsafe = integration["audio_budget_failsafe"]
+    if failsafe.get("default_enabled") is not True:
+        raise AssertionError("audio budget failsafe must be enabled by default")
+    if failsafe.get("default_consecutive_block_limit") != 3:
+        raise AssertionError("audio budget failsafe must trip after 3 consecutive overruns")
+    if failsafe.get("priority_rule") != "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT":
+        raise AssertionError("audio continuity priority invariant missing")
+
+    lock_conformance = lock["embedded_conformance"]
+    if lock_conformance.get("dsp_mutable_state_owner") != "JANUS_AUDIO_PLAYBACK_TASK":
+        raise AssertionError("runtime lock does not pin audio-task DSP ownership")
+    if lock_conformance.get("direct_cross_core_usb_dsp_mutation") is not False:
+        raise AssertionError("runtime lock permits cross-core USB DSP mutation")
 
     print("JANUS Echo-Pyramid runtime lock PASS")
     return 0
