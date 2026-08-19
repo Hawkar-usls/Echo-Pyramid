@@ -1,6 +1,6 @@
 {
   "schema": "janus.echo_pyramid.voice_contract.v2",
-  "version": "2.5",
+  "version": "2.6",
   "node": {
     "repository": "Hawkar-usls/Echo-Pyramid",
     "hardware": "M5Stack Echo Pyramid A167 + Atom Matrix",
@@ -26,6 +26,7 @@
   "pipeline": [
     "ORDINARY_SOURCE_AUDIO",
     "EXISTING_SAFE_GAIN_AND_MONO_BRIDGE",
+    "AUDIO_TASK_BLOCK_BOUNDARY_CONTROL_APPLY",
     "119_HZ_PEAKING_EQ",
     "117_119_121_HZ_RESONATOR_BANK",
     "GEOMETRY_DERIVED_ROOM_TAIL",
@@ -94,6 +95,19 @@
     "preserve_bt_approval_gate": true,
     "preserve_espnow_worker": true,
     "preserve_audio_priority": true,
+    "mutable_state_ownership": {
+      "owner": "JANUS_AUDIO_PLAYBACK_TASK",
+      "external_writers_allowed": false,
+      "external_control_transport": "PORTMUX_GUARDED_REQUEST_MAILBOX",
+      "application_boundary": "NEXT_PCM_BLOCK",
+      "mailbox_fields": [
+        "pending_enable",
+        "pending_depth",
+        "pending_clear_failsafe"
+      ],
+      "usb_parser_direct_dsp_mutation": false,
+      "reason": "Prevent reset/delay-buffer races between loopTask and janus_audio"
+    },
     "audio_budget_failsafe": {
       "default_enabled": true,
       "compile_time_enable": "JANUS_PYRAMID_DSP_FAILSAFE",
@@ -103,7 +117,7 @@
       "trip_condition": "DSP_PROCESS_TIME_US >= PCM_BLOCK_BUDGET_US",
       "trip_action": "LEAVE_FUTURE_PCM_DRY_AND_DISABLE_RESET_DSP_FROM_MAIN_LOOP",
       "automatic_reenable": false,
-      "manual_reenable": "PYR=ON",
+      "manual_reenable": "PYR=ON_REQUEST_APPLIED_BY_AUDIO_TASK",
       "reboot_reenable": true,
       "priority_rule": "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT"
     },
@@ -113,12 +127,17 @@
       "default": "ENABLED_ONLY_IF_BASE_FIRMWARE_DOES_NOT_CONSUME_SERIAL_INPUT",
       "ownership_guard": "COMPOSER_FAILS_CLOSED_IF_SERIAL_INPUT_OWNER_IS_DETECTED",
       "explicit_disable_option": "--no-usb-control",
-      "no_usb_mode_keeps": ["PYRAMID_DSP", "REALTIME_DSP_TELEMETRY", "AUDIO_BUDGET_FAILSAFE"],
+      "no_usb_mode_keeps": [
+        "PYRAMID_DSP",
+        "REALTIME_DSP_TELEMETRY",
+        "AUDIO_BUDGET_FAILSAFE",
+        "BLOCK_BOUNDARY_CONTROL_MAILBOX"
+      ],
       "commands": {
-        "PYR?": "REPORT_CURRENT_STATE_AND_FAILSAFE",
-        "PYR=0..100": "SET_SPATIAL_DEPTH_PERCENT",
-        "PYR=ON": "CLEAR_FAILSAFE_AND_ENABLE_DSP",
-        "PYR=OFF": "HARD_BYPASS_DSP"
+        "PYR?": "REPORT_CURRENT_AND_PENDING_STATE",
+        "PYR=0..100": "QUEUE_SPATIAL_DEPTH_PERCENT",
+        "PYR=ON": "QUEUE_FAILSAFE_CLEAR_AND_DSP_ENABLE",
+        "PYR=OFF": "QUEUE_HARD_BYPASS"
       },
       "purpose": "Repeatable A/B tuning on identical source audio without reflashing"
     },
@@ -141,6 +160,7 @@
   "hard_rules": [
     "ORDINARY_AUDIO_IN -> PYRAMID_COLORED_AUDIO_OUT",
     "DO_NOT_REPLACE_SOURCE_AUDIO_WITH_SYNTHETIC_TONES",
+    "DSP_MUTABLE_STATE_HAS_ONE_RUNTIME_OWNER",
     "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT",
     "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY",
     "KEEP_DRY_PATH_FOR_INTELLIGIBILITY",
