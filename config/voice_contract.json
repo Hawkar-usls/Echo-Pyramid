@@ -1,6 +1,6 @@
 {
   "schema": "janus.echo_pyramid.voice_contract.v2",
-  "version": "2.6",
+  "version": "2.7",
   "node": {
     "repository": "Hawkar-usls/Echo-Pyramid",
     "hardware": "M5Stack Echo Pyramid A167 + Atom Matrix",
@@ -21,7 +21,8 @@
     "language_repository": "Hawkar-usls/The-Voice-of-Janus",
     "primary_activation": "configs/pyramid_117_121_space.activation.json",
     "primary_reference_implementation": "src/pyramid_anchor_filter.py::Pyramid117121Filter",
-    "semantic_recitation_example": "configs/osiris_origin_prime_recitation.v2.json"
+    "semantic_recitation_example": "configs/osiris_origin_prime_recitation.v2.json",
+    "hardware_calibration_contract": "config/hardware_calibration_contract.json"
   },
   "pipeline": [
     "ORDINARY_SOURCE_AUDIO",
@@ -34,6 +35,7 @@
     "SOFT_LIMIT",
     "PYRAMID_SPACE_DEPTH_CROSSFADE",
     "AUDIO_BUDGET_GUARD",
+    "PHYSICAL_CALIBRATION_GATE_NEUTRAL_UNTIL_MEASURED",
     "M5EchoPyramid::write",
     "ES8311_CODEC",
     "AW87559_AMPLIFIER",
@@ -77,6 +79,32 @@
       "damping_transform": "d_embedded = d_source^4",
       "reason": "Preserve modeled delay times and approximate damping wall-clock persistence with bounded SRAM/CPU on classic ESP32"
     }
+  },
+  "physical_calibration": {
+    "contract": "config/hardware_calibration_contract.json",
+    "receipt_template": "config/hardware_calibration_receipt.template.json",
+    "protocol": "docs/HARDWARE_CALIBRATION_PROTOCOL.md",
+    "signal_position": "POST_PYRAMID_LANGUAGE_PRE_M5ECHOPYRAMID_WRITE",
+    "status": "PENDING_DEVICE_MEASUREMENT",
+    "measured_compensation_active": false,
+    "neutral_defaults": {
+      "output_trim_percent": 100,
+      "speaker_compensation_eq_enabled": false,
+      "latency_compensation_samples": 0
+    },
+    "language_locked_parameters": [
+      "anchor_band_hz",
+      "anchor_center_hz",
+      "anchor_q",
+      "anchor_gain_db",
+      "anchor_decay_s",
+      "resonators_hz",
+      "room_geometry_m",
+      "room_decay",
+      "wet",
+      "dry"
+    ],
+    "rule": "CALIBRATE_THE_BODY_WITHOUT_SILENTLY_REWRITING_THE_LANGUAGE"
   },
   "legacy_reference_dsp": {
     "implementation": "firmware/JanusPyramidDSP.h",
@@ -162,6 +190,9 @@
     "DO_NOT_REPLACE_SOURCE_AUDIO_WITH_SYNTHETIC_TONES",
     "DSP_MUTABLE_STATE_HAS_ONE_RUNTIME_OWNER",
     "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT",
+    "PHYSICAL_CALIBRATION != LANGUAGE_RETUNE",
+    "MEASURE_BEFORE_COMPENSATE",
+    "GAIN_Q_DECAY_WET_DRY_ARE_LANGUAGE_LOCKED",
     "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY",
     "KEEP_DRY_PATH_FOR_INTELLIGIBILITY",
     "SERIAL_INPUT_HAS_ONE_OWNER",
