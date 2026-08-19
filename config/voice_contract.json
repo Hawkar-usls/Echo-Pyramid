@@ -1,11 +1,19 @@
 {
   "schema": "janus.echo_pyramid.voice_contract.v2",
-  "version": "2.0",
+  "version": "2.1",
   "node": {
     "repository": "Hawkar-usls/Echo-Pyramid",
     "hardware": "M5Stack Echo Pyramid A167 + Atom Matrix",
     "role": "PHYSICAL_VOICE_BODY",
     "sample_rate_hz": 44100
+  },
+  "behavior_contract": {
+    "input": "ORDINARY_AUDIO_PCM",
+    "output": "SAME_SOURCE_AUDIO_WITH_PYRAMID_ACOUSTIC_COLORATION",
+    "semantic_content_preserved": true,
+    "source_audio_replaced_by_synthetic_tones": false,
+    "dry_path_preserved": true,
+    "effect_intent": "Make ordinary JANUS voice/music sound as if the source were heard inside a modeled pyramid chamber while preserving intelligibility and source identity."
   },
   "sources": {
     "hardware_library": "m5stack/M5Echo-Pyramid",
@@ -16,7 +24,7 @@
     "semantic_recitation_example": "configs/osiris_origin_prime_recitation.v2.json"
   },
   "pipeline": [
-    "A2DP_OR_LOCAL_PCM",
+    "ORDINARY_SOURCE_AUDIO",
     "EXISTING_SAFE_GAIN_AND_MONO_BRIDGE",
     "119_HZ_PEAKING_EQ",
     "117_119_121_HZ_RESONATOR_BANK",
@@ -60,6 +68,9 @@
   },
   "integration": {
     "insert_before": "ep.write(chunk.mono, chunk.frames);",
+    "default_enabled": true,
+    "applies_to_bluetooth_pcm": true,
+    "applies_to_local_mic_smoke_test": true,
     "extra_i2s_channel": false,
     "heap_allocation_in_audio_path": false,
     "preserve_bt_approval_gate": true,
@@ -67,6 +78,7 @@
     "preserve_audio_priority": true
   },
   "hard_rules": [
+    "ORDINARY_AUDIO_IN -> PYRAMID_COLORED_AUDIO_OUT",
     "DO_NOT_REPLACE_SOURCE_AUDIO_WITH_SYNTHETIC_TONES",
     "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY",
     "KEEP_DRY_PATH_FOR_INTELLIGIBILITY",
