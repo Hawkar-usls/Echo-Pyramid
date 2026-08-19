@@ -1,10 +1,11 @@
 {
   "schema": "janus.echo_pyramid.resonant_cosmos_demihead_voice_link.v1",
   "link_id": "ECHO_PYRAMID_RESONANT_COSMOS_DEMIHEAD_VOICE_LINK",
-  "status": "CANDIDATE_RECIPROCAL_LINK",
+  "status": "PROMOTED",
   "source_repository": "Hawkar-usls/Echo-Pyramid",
   "source_role": "PHYSICAL_VOICE_BODY",
-  "self_revision": "SELF_AT_PROMOTION",
+  "promotion_merge_revision": "aaa4d0f2af95302243c70e1658608fd699768cd6",
+  "self_revision": "aaa4d0f2af95302243c70e1658608fd699768cd6",
   "providers": {
     "cosmos_resonant_origin_prime": {
       "repository": "Hawkar-usls/Janus-Cosmos",
