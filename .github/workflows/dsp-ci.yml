@@ -16,6 +16,8 @@ jobs:
         run: python tools/verify_profile.py
       - name: Test fail-closed swarm composer
         run: python tests/test_composer.py
+      - name: Compile-smoke composed runtime with host stubs
+        run: python tests/compile_composed_runtime.py
       - name: Build Pyramid Language v0.3 ESP32-r2 test
         run: g++ -std=c++11 -O2 -Wall -Wextra -pedantic -Ifirmware tests/test_anchor_dsp.cpp -o test_anchor_dsp
       - name: Run Pyramid Language v0.3 ESP32-r2 test
