@@ -1,51 +1,64 @@
 # Scientific boundary
 
-`Echo-Pyramid` is allowed to be imaginative in presentation and strict in claims.
+`Echo-Pyramid` may be imaginative in presentation while remaining strict about what the acoustics establish.
 
-## What the embedded profile is
+## Current default profile
 
-The default profile is a deterministic rectangular-room acoustic model inherited from `The-Voice-of-Janus`.
+The physical default is `PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32`, ported from the current `The-Voice-of-Janus` `Pyramid117121Filter`.
 
-For chamber dimensions `Lx`, `Ly`, `Lz` and speed of sound `c`, air-acoustic modes are calculated as:
+It colours ordinary source audio with:
+
+- a dominant **117–121 Hz project anchor band** centered at 119 Hz;
+- three damped resonators at 117 / 119 / 121 Hz;
+- a model-based room tail derived from geometry `10.45 x 5.20 x 5.80 m` and `c = 343 m/s`;
+- an intelligible dry path.
+
+The 117–121 Hz range is therefore an **operator parameter / project anchor**, not a statement that all pyramids possess one special universal frequency.
+
+## What it is not
+
+The current profile is not evidence that:
+
+- the Great Pyramid was intentionally tuned to 117–121 Hz;
+- 117–121 Hz is the only meaningful acoustic band of a pyramid or chamber;
+- the current room tail is a measured impulse response;
+- a predicted/modelled acoustic effect reproduces an exact historical sound;
+- air-acoustic resonance is identical to stone/structural vibration.
+
+The upstream activation explicitly marks the effect model-based and keeps measured-IR and ancient-intent claims false.
+
+## Earlier modal reference
+
+The repository also preserves the earlier rectangular-room modal model. For dimensions `Lx`, `Ly`, `Lz` and speed of sound `c` it uses:
 
 ```text
 f_pqr = (c / 2) * sqrt((p/Lx)^2 + (q/Ly)^2 + (r/Lz)^2)
 ```
 
-The embedded ESP32 profile uses six derived render modes and a damped resonator bank to colour PCM audio.
-
-## What it is not
-
-It is not evidence that:
-
-- the Great Pyramid was designed as an electronic/audio frequency generator;
-- one special universal "pyramid frequency" exists;
-- the current dimensions are an exact historical acoustic survey;
-- predicted air modes are equivalent to measured resonances;
-- air-acoustic modes are the same as stone/structural vibration modes;
-- octave-translated render frequencies are physically present in the chamber.
-
-Octave translation is a rendering operation. Metadata must retain the original physical mode.
+That profile is useful for comparison but is no longer the physical composer default.
 
 ## Evidence ladder
 
-Use the following labels without collapsing them:
+Keep these labels distinct:
 
-1. `ILLUSTRATIVE_MODEL_BASED` — geometry/model chosen for exploration.
-2. `SOURCE_VERIFIED_GEOMETRY_MODEL` — dimensions and environmental assumptions tied to reliable sources, but acoustics still predicted.
-3. `MEASURED_ROOM_RESPONSE` — microphone/excitation measurement or impulse response from the physical chamber with documented method.
-4. `MEASURED_DEVICE_RESPONSE` — measurement of the Echo Pyramid hardware itself.
+1. `ILLUSTRATIVE_MODEL_BASED`
+2. `SOURCE_VERIFIED_GEOMETRY_MODEL`
+3. `MODEL_BASED_117_121_HZ_ANCHORED_EFFECT`
+4. `MEASURED_ROOM_RESPONSE`
+5. `MEASURED_DEVICE_RESPONSE`
 
-A higher rung does not retroactively turn a lower-rung object into measured evidence; preserve both artifacts and provenance.
+A later measurement does not retroactively convert an earlier model into measured evidence; keep both artifacts and their provenance.
 
 ## Hard rules
 
 ```text
-MODEL_BASED_RECONSTRUCTION != MEASURED_HISTORICAL_SOUND
-PREDICTED_MODAL_FREQUENCY != MEASURED_RESONANCE
+DO_NOT_REPLACE_SOURCE_AUDIO_WITH_SYNTHETIC_TONES
+117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY
+KEEP_DRY_PATH_FOR_INTELLIGIBILITY
+MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR
+PREDICTED_ACOUSTIC_MODEL != PROOF_OF_ANCIENT_INTENT
 AIR_ACOUSTIC_MODE != STRUCTURAL_VIBRATION_MODE
-RENDER_FREQUENCY != CLAIM_OF_ANCIENT_INTENT
 METAPHOR != PHYSICS
 ```
 
-These rules are part of the machine-readable contract in `config/voice_contract.json` and should travel with future firmware profiles.
+These rules are mirrored by `config/voice_contract.json` and should travel with every future firmware profile and receipt.
