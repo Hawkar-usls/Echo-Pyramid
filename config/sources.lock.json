@@ -29,16 +29,16 @@
   "voice_language": {
     "repository": "Hawkar-usls/The-Voice-of-Janus",
     "branch": "main",
-    "observed_head_commit": "f8567b16b85e8da0a74083cd7a9c2162547d2600",
+    "observed_head_commit": "2803c1cafa8ee8b6fe7a82c28a85375f255cace3",
     "files": {
-      "configs/pyramid_117_121_space.activation.json": "3d3203b53bf181656eac815235f1238ef7c4e57a",
+      "configs/pyramid_117_121_space.activation.json": "70016b9b1ad0ce2b20efd980f14859d66af0a7bd",
       "src/pyramid_anchor_filter.py": "c344504328fcfe2934949cfa2ab6f0ba138c18d1",
       "configs/osiris_origin_prime_recitation.v2.json": "e04a172dff903d31751b0b49cff2644788731dca"
     },
     "primary_operator": "Pyramid117121Filter",
     "anchor_band_hz": [117.0, 121.0],
     "language_profile_changed_since_pin": false,
-    "note": "Voice repository head advanced through larynx/model and physical-binding work while the pinned Pyramid Language v0.3 activation and reference implementation blobs remained unchanged."
+    "note": "Voice repository head advanced through larynx/Spiral and provenance work. Activation metadata blob changed while the canonical v0.3 anchor/Q/gain/decay/geometry/wet/dry values and Python reference implementation remained unchanged."
   },
   "policy": {
     "composer_must_fail_on_ambiguous_anchor_drift": true,
@@ -46,6 +46,8 @@
     "no_usb_control_mode_may_preserve_dsp_and_telemetry": true,
     "audio_continuity_has_priority_over_effect": true,
     "dsp_mutable_state_has_one_runtime_owner": true,
+    "physical_calibration_must_not_silently_retune_language": true,
+    "measure_before_enabling_speaker_compensation_eq": true,
     "do_not_silently_upgrade_language_profile": true,
     "new_measured_profiles_must_preserve_old_model_profiles": true
   }
