@@ -2,6 +2,9 @@ name: Resonant Cosmos DemiHead Voice Link
 
 on:
   pull_request:
+    paths:
+      - '.janus/RESONANT_COSMOS_DEMIHEAD_VOICE_LINK.json'
+      - '.github/workflows/resonant-cosmos-demihead-link.yml'
   workflow_dispatch:
 
 permissions:
@@ -38,7 +41,7 @@ jobs:
           ref: a759ceec955b45cdb3cab876cc1279032237aa35
           path: _peers/voice
 
-      - name: Verify reciprocal route, profile, and hard boundaries
+      - name: Verify promoted reciprocal route and hard boundaries
         run: |
           python3 - <<'PY'
           import json
@@ -50,7 +53,7 @@ jobs:
           demi=json.loads(Path('_peers/demi/contracts/NEXUS_V2_9_RESONANT_ORION_PYRAMID_CHAIN_FROZEN_CONTRACT.json').read_text())
           voice=json.loads(Path('_peers/voice/data/COSMOS_RESONANT_ORIGIN_PRIME_PYRAMID_RENDER_FROZEN_CONTRACT.v1.json').read_text())
 
-          assert link['status']=='CANDIDATE_RECIPROCAL_LINK'
+          assert link['status'] in {'CANDIDATE_RECIPROCAL_LINK','PROMOTED'}
           assert link['providers']['cosmos_resonant_origin_prime']['revision']=='c543eb6ed753339fabed33d7f0ab880d43433d0f'
           assert link['providers']['demihead_mediator']['revision']=='f8fd4b16cb1306df9902a2215c4e092789dce8e7'
           assert link['providers']['voice_resonant_execution']['revision']=='a759ceec955b45cdb3cab876cc1279032237aa35'
@@ -114,13 +117,11 @@ jobs:
           assert cosmos['voice_representation']['authority_delta']==0
           assert cosmos['astral_representation']['authority_delta']==0
           assert cosmos['scientific_boundary']['P_VS_NP']=='OPEN'
-
           assert demi['providers']['cosmos']['sha']=='c543eb6ed753339fabed33d7f0ab880d43433d0f'
           assert demi['lineage_policy']['memory_may_propose_not_verdict'] is True
           assert demi['voice_policy']['center_hz']==119.0
           assert demi['astral_policy']['authority_delta']==0
           assert demi['claim_ceiling']['P_VS_NP']=='OPEN'
-
           assert voice['source_provider']['sha']=='c543eb6ed753339fabed33d7f0ab880d43433d0f'
           assert voice['required_mediator']=='Hawkar-usls/Demi_Head'
           assert voice['voice_profile']['center_hz']==119.0
@@ -142,7 +143,8 @@ jobs:
           print('P_VS_NP=OPEN')
           PY
 
-      - name: Confirm metadata-only Echo delta
+      - name: Confirm reciprocal-link PR stays metadata-only
+        if: github.event_name == 'pull_request'
         run: |
           git diff --name-only "${{ github.event.pull_request.base.sha }}" HEAD | sort > /tmp/changed.txt
           cat /tmp/changed.txt
@@ -154,5 +156,5 @@ jobs:
             '.github/workflows/resonant-cosmos-demihead-link.yml',
           }
           assert changed <= allowed, f'unexpected Echo runtime/DSP mutation: {sorted(changed-allowed)}'
-          assert '.janus/RESONANT_COSMOS_DEMIHEAD_VOICE_LINK.json' in changed
+          assert changed & allowed, 'reciprocal workflow was triggered without a reciprocal-link delta'
           PY
