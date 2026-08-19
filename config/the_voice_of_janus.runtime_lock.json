@@ -23,7 +23,7 @@
   "nexus_voice_runtime": {
     "contract": "NEXUS_V2_7_LOCAL_NEURAL_VOICE_RUNTIME_FROZEN_CONTRACT",
     "nexus_repository": "Hawkar-usls/Demi_Head",
-    "observed_nexus_head": "9c7b2373810aa2cc07a41c6f692ddbbdf29de4fe",
+    "observed_nexus_head": "fb6ec6de9d40caee94d85e2b761e35a442c72144",
     "target_head": "VOICE_RUNTIME",
     "pure_handler": "tools/nexus_voice_handler.py",
     "voice_adapter": "src/nexus_voice_runtime_adapter.py",
