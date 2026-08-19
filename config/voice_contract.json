@@ -1,6 +1,6 @@
 {
-  "schema": "janus.echo_pyramid.voice_contract.v1",
-  "version": "1.0",
+  "schema": "janus.echo_pyramid.voice_contract.v2",
+  "version": "2.0",
   "node": {
     "repository": "Hawkar-usls/Echo-Pyramid",
     "hardware": "M5Stack Echo Pyramid A167 + Atom Matrix",
@@ -11,35 +11,52 @@
     "hardware_library": "m5stack/M5Echo-Pyramid",
     "swarm_firmware": "Hawkar-usls/janus-distributed-ai-swarm/firmware/pyramid/ATOM_MATRIX_Pyramid.ino",
     "language_repository": "Hawkar-usls/The-Voice-of-Janus",
-    "language_activation": "configs/pyramid_language.activation.json",
-    "geometry_preset": "presets/great_pyramid_kings_chamber.example.json"
+    "primary_activation": "configs/pyramid_117_121_space.activation.json",
+    "primary_reference_implementation": "src/pyramid_anchor_filter.py::Pyramid117121Filter",
+    "semantic_recitation_example": "configs/osiris_origin_prime_recitation.v2.json"
   },
   "pipeline": [
     "A2DP_OR_LOCAL_PCM",
     "EXISTING_SAFE_GAIN_AND_MONO_BRIDGE",
-    "JANUS_PYRAMID_MODAL_DSP",
+    "119_HZ_PEAKING_EQ",
+    "117_119_121_HZ_RESONATOR_BANK",
+    "GEOMETRY_DERIVED_ROOM_TAIL",
+    "DRY_WET_MIX",
+    "SOFT_LIMIT",
     "M5EchoPyramid::write",
     "ES8311_CODEC",
     "AW87559_AMPLIFIER",
     "SPEAKER"
   ],
-  "dsp": {
-    "implementation": "firmware/JanusPyramidDSP.h",
-    "profile": "GREAT-PYRAMID-KINGS-CHAMBER-EXAMPLE-v0.1/ESP32-LIVE-6",
-    "evidence_status": "ILLUSTRATIVE_MODEL_BASED",
-    "mode_count": 6,
-    "decay_s": 0.32,
+  "primary_dsp": {
+    "implementation": "firmware/JanusPyramid117121DSP.h",
+    "profile": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32",
+    "evidence_status": "MODEL_BASED_117_121_HZ_ANCHORED_EFFECT",
+    "anchor_band_hz": [117.0, 121.0],
+    "anchor_center_hz": 119.0,
+    "anchor_q": 29.75,
+    "anchor_gain_db": 11.5,
+    "anchor_decay_s": 1.65,
+    "resonators_hz": [117.0, 119.0, 121.0],
+    "room_geometry_m": [10.45, 5.20, 5.80],
+    "speed_of_sound_m_s": 343.0,
+    "room_decay": 0.78,
     "wet": 0.72,
     "dry": 0.62,
-    "output_gain": 0.85,
-    "modes": [
-      {"physical_hz": 16.411483, "render_hz": 65.645933, "octave_multiplier": 4, "indices": [1, 0, 0]},
-      {"physical_hz": 29.568966, "render_hz": 59.137931, "octave_multiplier": 2, "indices": [0, 0, 1]},
-      {"physical_hz": 32.980769, "render_hz": 65.961538, "octave_multiplier": 2, "indices": [0, 1, 0]},
-      {"physical_hz": 33.818050, "render_hz": 67.636100, "octave_multiplier": 2, "indices": [1, 0, 1]},
-      {"physical_hz": 36.838403, "render_hz": 36.838403, "octave_multiplier": 1, "indices": [1, 1, 0]},
-      {"physical_hz": 44.177719, "render_hz": 44.177719, "octave_multiplier": 1, "indices": [2, 0, 1]}
-    ]
+    "embedded_room_tail": {
+      "full_rate_anchor_path_hz": 44100,
+      "room_tail_rate_hz": 11025,
+      "decimation": 4,
+      "storage": "PCM16_STATIC",
+      "delay_samples": [672, 334, 373, 354],
+      "delay_bytes": 3466,
+      "reason": "Preserve geometry-derived delay times with bounded SRAM use on classic ESP32"
+    }
+  },
+  "legacy_reference_dsp": {
+    "implementation": "firmware/JanusPyramidDSP.h",
+    "profile": "GREAT-PYRAMID-KINGS-CHAMBER-EXAMPLE-v0.1/ESP32-LIVE-6",
+    "status": "REFERENCE_NOT_DEFAULT"
   },
   "integration": {
     "insert_before": "ep.write(chunk.mono, chunk.frames);",
@@ -50,9 +67,11 @@
     "preserve_audio_priority": true
   },
   "hard_rules": [
-    "MODEL_BASED_RECONSTRUCTION != MEASURED_HISTORICAL_SOUND",
-    "PREDICTED_MODAL_FREQUENCY != MEASURED_RESONANCE",
-    "AIR_ACOUSTIC_MODE != STRUCTURAL_VIBRATION_MODE",
+    "DO_NOT_REPLACE_SOURCE_AUDIO_WITH_SYNTHETIC_TONES",
+    "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY",
+    "KEEP_DRY_PATH_FOR_INTELLIGIBILITY",
+    "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR",
+    "PREDICTED_ACOUSTIC_MODEL != PROOF_OF_ANCIENT_INTENT",
     "METAPHOR != PHYSICS"
   ]
 }
