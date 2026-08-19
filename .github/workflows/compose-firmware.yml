@@ -43,6 +43,8 @@ jobs:
           test -s "$B/JanusPyramid117121DSP.h"
           test -s "$B/JanusPyramid117121Profile.h"
           grep -q 'JanusPyramid117121DSP janusVoiceDsp' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
+          grep -q 'portMUX_TYPE janusVoiceControlMux' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
+          grep -q 'janusVoiceApplyPendingAtBlockBoundary();' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
           grep -q 'janusVoiceProcessChunk(chunk.mono, chunk.frames);' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
           grep -q 'janusVoiceSafetyTick();' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
           grep -q 'PYRAMID_LANGUAGE_FAILSAFE' "$B/ATOM_MATRIX_Pyramid_JanusVoice.ino"
@@ -53,8 +55,12 @@ jobs:
           from pathlib import Path
           p = Path('build/ATOM_MATRIX_Pyramid_JanusVoice/ATOM_MATRIX_Pyramid_JanusVoice.ino.receipt.json')
           r = json.loads(p.read_text(encoding='utf-8'))
-          assert r['schema'] == 'janus.echo_pyramid.compose_receipt.v2.5'
+          assert r['schema'] == 'janus.echo_pyramid.compose_receipt.v2.6'
           assert r['profile_id'].endswith('/ESP32-r2')
+          assert r['control_ownership']['dsp_mutable_state_owner'] == 'JANUS_AUDIO_PLAYBACK_TASK'
+          assert r['control_ownership']['external_control_model'] == 'PORTMUX_GUARDED_REQUEST_MAILBOX'
+          assert r['control_ownership']['application_boundary'] == 'NEXT_PCM_BLOCK'
+          assert r['control_ownership']['direct_cross_core_dsp_reset_from_usb'] is False
           assert r['real_time_budget']['failsafe']['enabled_by_default'] is True
           assert r['real_time_budget']['failsafe']['consecutive_blocks'] == 3
           assert r['real_time_budget']['failsafe']['action'] == 'DRY_BYPASS_UNTIL_EXPLICIT_PYR_ON_OR_REBOOT'
