@@ -9,6 +9,7 @@
 class JanusPyramidDSP {
  public:
   JanusPyramidDSP() : sample_rate_hz_(0), r_(0.0f), r2_(0.0f), wet_scale_(0.0f), enabled_(true), ready_(false) {
+    for (size_t i = 0; i < janus_voice::kModeCount; ++i) coeff_[i] = 0.0f;
     reset();
   }
 
@@ -32,11 +33,12 @@ class JanusPyramidDSP {
     return true;
   }
 
+  // Reset resonator memory only. Coefficients are part of the active profile and
+  // must survive a state reset.
   void reset() {
     for (size_t i = 0; i < janus_voice::kModeCount; ++i) {
       z1_[i] = 0.0f;
       z2_[i] = 0.0f;
-      coeff_[i] = 0.0f;
     }
   }
 
