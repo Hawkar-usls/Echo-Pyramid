@@ -1,0 +1,58 @@
+{
+  "schema": "janus.echo_pyramid.voice_contract.v1",
+  "version": "1.0",
+  "node": {
+    "repository": "Hawkar-usls/Echo-Pyramid",
+    "hardware": "M5Stack Echo Pyramid A167 + Atom Matrix",
+    "role": "PHYSICAL_VOICE_BODY",
+    "sample_rate_hz": 44100
+  },
+  "sources": {
+    "hardware_library": "m5stack/M5Echo-Pyramid",
+    "swarm_firmware": "Hawkar-usls/janus-distributed-ai-swarm/firmware/pyramid/ATOM_MATRIX_Pyramid.ino",
+    "language_repository": "Hawkar-usls/The-Voice-of-Janus",
+    "language_activation": "configs/pyramid_language.activation.json",
+    "geometry_preset": "presets/great_pyramid_kings_chamber.example.json"
+  },
+  "pipeline": [
+    "A2DP_OR_LOCAL_PCM",
+    "EXISTING_SAFE_GAIN_AND_MONO_BRIDGE",
+    "JANUS_PYRAMID_MODAL_DSP",
+    "M5EchoPyramid::write",
+    "ES8311_CODEC",
+    "AW87559_AMPLIFIER",
+    "SPEAKER"
+  ],
+  "dsp": {
+    "implementation": "firmware/JanusPyramidDSP.h",
+    "profile": "GREAT-PYRAMID-KINGS-CHAMBER-EXAMPLE-v0.1/ESP32-LIVE-6",
+    "evidence_status": "ILLUSTRATIVE_MODEL_BASED",
+    "mode_count": 6,
+    "decay_s": 0.32,
+    "wet": 0.72,
+    "dry": 0.62,
+    "output_gain": 0.85,
+    "modes": [
+      {"physical_hz": 16.411483, "render_hz": 65.645933, "octave_multiplier": 4, "indices": [1, 0, 0]},
+      {"physical_hz": 29.568966, "render_hz": 59.137931, "octave_multiplier": 2, "indices": [0, 0, 1]},
+      {"physical_hz": 32.980769, "render_hz": 65.961538, "octave_multiplier": 2, "indices": [0, 1, 0]},
+      {"physical_hz": 33.818050, "render_hz": 67.636100, "octave_multiplier": 2, "indices": [1, 0, 1]},
+      {"physical_hz": 36.838403, "render_hz": 36.838403, "octave_multiplier": 1, "indices": [1, 1, 0]},
+      {"physical_hz": 44.177719, "render_hz": 44.177719, "octave_multiplier": 1, "indices": [2, 0, 1]}
+    ]
+  },
+  "integration": {
+    "insert_before": "ep.write(chunk.mono, chunk.frames);",
+    "extra_i2s_channel": false,
+    "heap_allocation_in_audio_path": false,
+    "preserve_bt_approval_gate": true,
+    "preserve_espnow_worker": true,
+    "preserve_audio_priority": true
+  },
+  "hard_rules": [
+    "MODEL_BASED_RECONSTRUCTION != MEASURED_HISTORICAL_SOUND",
+    "PREDICTED_MODAL_FREQUENCY != MEASURED_RESONANCE",
+    "AIR_ACOUSTIC_MODE != STRUCTURAL_VIBRATION_MODE",
+    "METAPHOR != PHYSICS"
+  ]
+}
