@@ -83,8 +83,8 @@ def main() -> int:
         raise AssertionError("time-equivalent decimated damping invariant missing")
 
     contract = json.loads((ROOT / str(embedded["voice_contract"])).read_text(encoding="utf-8"))
-    if contract.get("version") != "2.6":
-        raise AssertionError("voice contract must be physical contract v2.6")
+    if contract.get("version") != "2.7":
+        raise AssertionError("voice contract must be physical contract v2.7")
 
     dsp = contract["primary_dsp"]
     if dsp.get("language_version") != canonical["profile_id"]:
@@ -95,6 +95,21 @@ def main() -> int:
         raise AssertionError("voice contract anchor band drifted")
     if dsp.get("anchor_center_hz") != 119.0:
         raise AssertionError("voice contract anchor center drifted")
+
+    physical_cal = contract["physical_calibration"]
+    if physical_cal.get("status") != "PENDING_DEVICE_MEASUREMENT":
+        raise AssertionError("voice contract physical calibration must remain pending")
+    if physical_cal.get("signal_position") != "POST_PYRAMID_LANGUAGE_PRE_M5ECHOPYRAMID_WRITE":
+        raise AssertionError("voice contract calibration gate moved out of post-language position")
+    if physical_cal.get("measured_compensation_active") is not False:
+        raise AssertionError("voice contract activated unmeasured physical compensation")
+    if physical_cal.get("rule") != "CALIBRATE_THE_BODY_WITHOUT_SILENTLY_REWRITING_THE_LANGUAGE":
+        raise AssertionError("voice contract calibration boundary rule missing")
+    neutral = physical_cal["neutral_defaults"]
+    if neutral.get("output_trim_percent") != 100:
+        raise AssertionError("unmeasured output trim must remain neutral at 100 percent")
+    if neutral.get("speaker_compensation_eq_enabled") is not False:
+        raise AssertionError("unmeasured speaker compensation EQ must remain disabled")
 
     integration = contract["integration"]
     ownership = integration["mutable_state_ownership"]
@@ -160,6 +175,8 @@ def main() -> int:
     }
     if set(calibration.get("language_locked_parameters", [])) != expected_locked:
         raise AssertionError("runtime lock language-locked calibration parameter set drifted")
+    if set(physical_cal.get("language_locked_parameters", [])) != expected_locked:
+        raise AssertionError("voice contract language-locked calibration parameter set drifted")
 
     print("JANUS Echo-Pyramid runtime + calibration lock PASS")
     return 0
