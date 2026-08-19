@@ -1,0 +1,36 @@
+{
+  "schema": "janus.echo_pyramid.voice_runtime_lock.v1",
+  "status": "ACTIVE_PINNED_LANGUAGE_RUNTIME",
+  "physical_repository": "Hawkar-usls/Echo-Pyramid",
+  "language_repository": "Hawkar-usls/The-Voice-of-Janus",
+  "observed_voice_head_commit": "9b500169d97ed576e874979026432403da6bd77e",
+  "canonical_language": {
+    "activation": "configs/pyramid_117_121_space.activation.json",
+    "activation_blob_sha": "3d3203b53bf181656eac815235f1238ef7c4e57a",
+    "reference_implementation": "src/pyramid_anchor_filter.py::Pyramid117121Filter",
+    "reference_implementation_blob_sha": "c344504328fcfe2934949cfa2ab6f0ba138c18d1",
+    "profile_id": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3"
+  },
+  "embedded_implementation": {
+    "voice_contract": "config/voice_contract.json",
+    "voice_contract_blob_sha": "78130263f19c4375d4d91e625c526631fee805ca",
+    "profile_header": "firmware/JanusPyramid117121Profile.h",
+    "profile_header_blob_sha": "1a411abe9661ad4812acca0a5996d7587a79b5e4",
+    "dsp_header": "firmware/JanusPyramid117121DSP.h",
+    "dsp_header_blob_sha": "d32073f4d1c231b7c61b835f70c3f17a84c9fa76"
+  },
+  "signal_contract": "ORDINARY_AUDIO_PCM -> SAME_SOURCE_AUDIO_WITH_PYRAMID_ACOUSTIC_COLORATION",
+  "authority_split": {
+    "semantic_and_tts_larynx": "The-Voice-of-Janus / DemiHead upstream",
+    "acoustic_language_contract": "The-Voice-of-Janus",
+    "realtime_physical_execution": "Echo-Pyramid",
+    "speaker_output": "M5 Echo Pyramid hardware"
+  },
+  "hard_rules": [
+    "DO_NOT_SYNTHESIZE_REPLACEMENT_TONES_FOR_SOURCE_AUDIO",
+    "DO_NOT_CHANGE_117_121_PROFILE_WITHOUT_EXPLICIT_LANGUAGE_VERSION_BUMP",
+    "TTS_TIMBRE_CHANGES_MUST_NOT_CHANGE_PYRAMID_LANGUAGE_PARAMETERS",
+    "MIC_MUSIC_TTS_AND_BLUETOOTH_PCM_SHARE_THE_SAME_ACOUSTIC_OPERATOR",
+    "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR"
+  ]
+}
