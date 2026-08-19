@@ -2,8 +2,8 @@
 """Compose canonical JANUS Pyramid swarm firmware with Pyramid Language v0.3.
 
 The default physical voice operator is the current The-Voice-of-Janus
-117-121 Hz anchored space. This tool is fail-closed: source drift must be
-reviewed instead of guessed.
+117-121 Hz anchored space. This tool is fail-closed: source drift and console
+ownership conflicts must be reviewed instead of guessed.
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ GLOBAL_ANCHOR = "M5EchoPyramid ep;"
 INIT_ANCHOR = "  initPyramid();"
 WRITE_ANCHOR = "        ep.write(chunk.mono, chunk.frames);"
 LOOP_STATUS_ANCHOR = "  serialStatus();"
+SERIAL_INPUT_TOKENS = ("Serial.available(", "Serial.read(", "Serial.readString", "Serial.parseInt(")
 
 
 def sha256_bytes(data: bytes) -> str:
@@ -34,8 +35,12 @@ def require_exactly_once(text: str, anchor: str, label: str) -> None:
         raise RuntimeError(f"{label}: expected exactly one anchor, found {count}: {anchor!r}")
 
 
-def runtime_block() -> str:
-    return r'''M5EchoPyramid ep;
+def serial_input_owners(source: str) -> list[str]:
+    return [token for token in SERIAL_INPUT_TOKENS if token in source]
+
+
+def runtime_block(*, usb_control: bool) -> str:
+    common = r'''M5EchoPyramid ep;
 
 #ifndef JANUS_PYRAMID_LANGUAGE_AMOUNT
 #define JANUS_PYRAMID_LANGUAGE_AMOUNT 100
@@ -46,8 +51,6 @@ volatile uint32_t janusVoiceBlocks = 0;
 volatile uint32_t janusVoiceFramesL32 = 0;
 volatile uint32_t janusVoiceProcessUsEma = 0;
 volatile uint32_t janusVoiceProcessUsPeakWindow = 0;
-char janusVoiceSerialBuf[24] = {0};
-uint8_t janusVoiceSerialLen = 0;
 
 static void janusVoiceProcessChunk(int16_t* pcm, uint16_t frames) {
   const uint32_t started = micros();
@@ -60,6 +63,11 @@ static void janusVoiceProcessChunk(int16_t* pcm, uint16_t frames) {
   else janusVoiceProcessUsEma = (janusVoiceProcessUsEma * 7U + elapsed) / 8U;
   if (elapsed > janusVoiceProcessUsPeakWindow) janusVoiceProcessUsPeakWindow = elapsed;
 }
+'''
+
+    usb = r'''
+char janusVoiceSerialBuf[24] = {0};
+uint8_t janusVoiceSerialLen = 0;
 
 static void janusVoicePrintControlState(const char* reason) {
   Serial.printf("PYRAMID_LANGUAGE_CONTROL | %s enabled=%d depth=%u%% profile=%s\n",
@@ -121,7 +129,9 @@ static void janusVoiceSerialControlTick() {
     }
   }
 }
+'''
 
+    status = r'''
 static void janusVoiceStatusTick() {
   static uint32_t lastMs = 0;
   const uint32_t now = millis();
@@ -147,9 +157,10 @@ static void janusVoiceStatusTick() {
                 (unsigned)janusVoiceDsp.roomDelayBytes(),
                 (unsigned long)ESP.getFreeHeap());
 }'''
+    return common + (usb if usb_control else "") + status
 
 
-def compose(source: str) -> str:
+def compose(source: str, *, usb_control: bool = True) -> str:
     if '#include "JanusPyramid117121DSP.h"' in source:
         raise RuntimeError("source already contains Pyramid Language v0.3 integration")
 
@@ -159,14 +170,21 @@ def compose(source: str) -> str:
     require_exactly_once(source, WRITE_ANCHOR, "audio write")
     require_exactly_once(source, LOOP_STATUS_ANCHOR, "loop status")
 
-    source = source.replace(
-        INCLUDE_ANCHOR,
-        INCLUDE_ANCHOR + '\n#include "JanusPyramid117121DSP.h"\n#include <stdlib.h>\n#include <string.h>',
-        1,
-    )
-    source = source.replace(GLOBAL_ANCHOR, runtime_block(), 1)
-    source = source.replace(
-        INIT_ANCHOR,
+    if usb_control:
+        owners = serial_input_owners(source)
+        if owners:
+            raise RuntimeError(
+                "USB Serial input ownership conflict: base firmware already consumes Serial input "
+                f"via {owners!r}; review ownership or compose with --no-usb-control"
+            )
+
+    extra_includes = '\n#include "JanusPyramid117121DSP.h"'
+    if usb_control:
+        extra_includes += "\n#include <stdlib.h>\n#include <string.h>"
+    source = source.replace(INCLUDE_ANCHOR, INCLUDE_ANCHOR + extra_includes, 1)
+    source = source.replace(GLOBAL_ANCHOR, runtime_block(usb_control=usb_control), 1)
+
+    init_text = (
         INIT_ANCHOR
         + "\n  const bool janusVoiceOk = janusVoiceDsp.begin(EP_SAMPLE_RATE);"
         + "\n  janusVoiceDsp.setAmountPercent(JANUS_PYRAMID_LANGUAGE_AMOUNT);"
@@ -177,26 +195,31 @@ def compose(source: str) -> str:
         + "\n                (unsigned)janusVoiceDsp.targetAmountPercent(),"
         + "\n                (unsigned)janusVoiceDsp.roomDelayBytes(),"
         + "\n                (unsigned)sizeof(janusVoiceDsp));"
-        + "\n  Serial.println(\"Pyramid Language USB control: PYR? | PYR=0..100 | PYR=ON | PYR=OFF\");",
-        1,
     )
+    if usb_control:
+        init_text += "\n  Serial.println(\"Pyramid Language USB control: PYR? | PYR=0..100 | PYR=ON | PYR=OFF\");"
+    else:
+        init_text += "\n  Serial.println(\"Pyramid Language USB control: DISABLED_BY_COMPOSER\");"
+    source = source.replace(INIT_ANCHOR, init_text, 1)
+
     source = source.replace(
         WRITE_ANCHOR,
         "        janusVoiceProcessChunk(chunk.mono, chunk.frames);\n" + WRITE_ANCHOR,
         1,
     )
-    source = source.replace(
-        LOOP_STATUS_ANCHOR,
-        "  janusVoiceSerialControlTick();\n  janusVoiceStatusTick();\n" + LOOP_STATUS_ANCHOR,
-        1,
-    )
+
+    loop_prefix = "  janusVoiceStatusTick();\n"
+    if usb_control:
+        loop_prefix = "  janusVoiceSerialControlTick();\n" + loop_prefix
+    source = source.replace(LOOP_STATUS_ANCHOR, loop_prefix + LOOP_STATUS_ANCHOR, 1)
 
     banner = (
         "// JANUS PYRAMID LANGUAGE COMPOSED LAYER\n"
         "// Profile: " + PROFILE_ID + "\n"
         "// Ordinary source PCM is preserved and acoustically colored in real time.\n"
-        "// USB tuning: PYR? | PYR=0..100 | PYR=ON | PYR=OFF\n"
-        "// 117-121 Hz is a project anchor band, not the only frequency.\n"
+        + ("// USB tuning: PYR? | PYR=0..100 | PYR=ON | PYR=OFF\n" if usb_control
+           else "// USB tuning: disabled by composer option\n")
+        + "// 117-121 Hz is a project anchor band, not the only frequency.\n"
         "// MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR\n\n"
     )
     return banner + source
@@ -208,6 +231,11 @@ def main() -> int:
     )
     parser.add_argument("base", type=Path, help="canonical ATOM_MATRIX_Pyramid.ino")
     parser.add_argument("output", type=Path, help="output composed .ino")
+    parser.add_argument(
+        "--no-usb-control",
+        action="store_true",
+        help="do not consume Serial input; use when the base firmware owns the USB console",
+    )
     args = parser.parse_args()
 
     base = args.base.resolve()
@@ -217,7 +245,8 @@ def main() -> int:
 
     raw = base.read_bytes()
     text = raw.decode("utf-8-sig")
-    composed = compose(text)
+    usb_control = not args.no_usb_control
+    composed = compose(text, usb_control=usb_control)
 
     output.parent.mkdir(parents=True, exist_ok=True)
     output.write_text(composed, encoding="utf-8", newline="\n")
@@ -229,7 +258,7 @@ def main() -> int:
 
     out_raw = output.read_bytes()
     receipt = {
-        "schema": "janus.echo_pyramid.compose_receipt.v2.3",
+        "schema": "janus.echo_pyramid.compose_receipt.v2.4",
         "status": "PASS",
         "profile_id": PROFILE_ID,
         "language_version": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
@@ -242,15 +271,16 @@ def main() -> int:
         "injections": [
             "JanusPyramid117121DSP include",
             "Pyramid Language runtime + 0..100 percent depth API",
-            "USB Serial local tuning control",
             "EP_SAMPLE_RATE DSP init",
             "timed processInPlace immediately before ep.write(chunk.mono, chunk.frames)",
             "10-second DSP real-time budget telemetry",
-        ],
+        ] + (["USB Serial local tuning control"] if usb_control else []),
         "usb_control": {
+            "enabled": usb_control,
             "network_io": false,
-            "commands": ["PYR?", "PYR=0..100", "PYR=ON", "PYR=OFF"],
-            "purpose": "Local A/B acoustic tuning without reflashing the device"
+            "ownership_guard": "FAIL_CLOSED_IF_BASE_CONSUMES_SERIAL_INPUT",
+            "commands": ["PYR?", "PYR=0..100", "PYR=ON", "PYR=OFF"] if usb_control else [],
+            "purpose": "Local A/B acoustic tuning without reflashing the device",
         },
         "real_time_budget": {
             "chunk_frames": 256,
@@ -268,6 +298,7 @@ def main() -> int:
         "hard_rules": [
             "ORDINARY_AUDIO_IN -> PYRAMID_COLORED_AUDIO_OUT",
             "117_121_HZ_IS_AN_ANCHOR_BAND_NOT_THE_ONLY_FREQUENCY",
+            "SERIAL_INPUT_HAS_ONE_OWNER",
             "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR",
         ],
     }
@@ -276,6 +307,7 @@ def main() -> int:
 
     print("JANUS Echo-Pyramid composition PASS")
     print(f"Profile:         {PROFILE_ID}")
+    print(f"USB control:     {'ON' if usb_control else 'OFF'}")
     print(f"Base SHA-256:   {receipt['base_sha256']}")
     print(f"Output SHA-256: {receipt['output_sha256']}")
     print(f"Firmware:       {output}")
