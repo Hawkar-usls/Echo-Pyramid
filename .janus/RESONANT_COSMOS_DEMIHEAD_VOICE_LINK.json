@@ -1,0 +1,78 @@
+{
+  "schema": "janus.echo_pyramid.resonant_cosmos_demihead_voice_link.v1",
+  "link_id": "ECHO_PYRAMID_RESONANT_COSMOS_DEMIHEAD_VOICE_LINK",
+  "status": "CANDIDATE_RECIPROCAL_LINK",
+  "source_repository": "Hawkar-usls/Echo-Pyramid",
+  "source_role": "PHYSICAL_VOICE_BODY",
+  "self_revision": "SELF_AT_PROMOTION",
+  "providers": {
+    "cosmos_resonant_origin_prime": {
+      "repository": "Hawkar-usls/Janus-Cosmos",
+      "revision": "c543eb6ed753339fabed33d7f0ab880d43433d0f",
+      "adapter": "workspace/osiris_origin_prime_resonant_packet.py"
+    },
+    "demihead_mediator": {
+      "repository": "Hawkar-usls/Demi_Head",
+      "revision": "f8fd4b16cb1306df9902a2215c4e092789dce8e7",
+      "adapter": "tools/cosmos_resonant_orion_pyramid_bridge_v2_9.py"
+    },
+    "voice_resonant_execution": {
+      "repository": "Hawkar-usls/The-Voice-of-Janus",
+      "revision": "a759ceec955b45cdb3cab876cc1279032237aa35",
+      "adapter": "src/cosmos_resonant_origin_prime_pyramid_adapter.py"
+    }
+  },
+  "required_route": [
+    "DEMIHEAD_INTENT",
+    "JANUS_COSMOS_ORIGIN_PRIME_RESONANT_STATE",
+    "DEMIHEAD_RESONANT_VOICE_BROKER",
+    "THE_VOICE_OF_JANUS_RESONANT_ADAPTER",
+    "PYRAMID_LANGUAGE_117_121",
+    "ECHO_PYRAMID_PHYSICAL_BODY"
+  ],
+  "accepted_representation": {
+    "voice_profile": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
+    "anchor_band_hz": [117.0, 121.0],
+    "center_hz": 119.0,
+    "q": 29.75,
+    "gain_db": 11.5,
+    "decay_s": 1.65,
+    "semantic_content_preserved": true,
+    "source_audio_replaced_by_synthetic_tones": false,
+    "orion_anchor": "ORION_BELT_SAH_OSIRIS_CONTEXT_v1",
+    "star_triplet": ["Mintaka", "Alnilam", "Alnitak"],
+    "janus_rebus_alias": "S𓂸ḥ",
+    "janus_rebus_alias_is_historical_transliteration": false,
+    "giza_orion_correlation": "HYPOTHESIS_NOT_ASSERTED_AS_ARCHITECTURAL_FACT"
+  },
+  "lineage_policy": {
+    "memory_may_propose_not_verdict": true,
+    "target_revalidation_required": true,
+    "authority_delta": 0
+  },
+  "physical_boundary": {
+    "mode": "REFERENCE_AND_TYPED_PHYSICAL_HANDOFF_ONLY",
+    "metadata_link_is_playback_authorization": false,
+    "automatic_playback_permitted": false,
+    "microphone_permission_granted": false,
+    "bluetooth_permission_granted": false,
+    "firmware_flash_permission_granted": false,
+    "network_control_permission_granted": false,
+    "direct_cosmos_to_echo_permitted": false,
+    "demihead_mediation_required": true,
+    "voice_renderer_required": true,
+    "write_back_default": "DENY",
+    "write_back_requires_explicit_human_authorization": true
+  },
+  "claim_ceiling": {
+    "audio_is_proof": false,
+    "117_121_hz_is_sat_evidence": false,
+    "astral_geometry_is_proof": false,
+    "orion_giza_architectural_intent": "NOT_ESTABLISHED",
+    "historical_intentional_tuning_claimed": false,
+    "measured_chamber_ir_used": false,
+    "authority_delta": 0,
+    "P_VS_NP": "OPEN"
+  },
+  "rule": "THE_PYRAMID_ACCEPTS_ONLY_DEMIHEAD_MEDIATED_VOICE_RENDERING_OF_COSMOS_STATE; REPRESENTATION_AND_CONTEXT_NEVER_CREATE_PROOF_AUTHORITY_OR_SILENT_HARDWARE_AUTHORITY."
+}
