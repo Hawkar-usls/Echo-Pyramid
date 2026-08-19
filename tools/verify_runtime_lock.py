@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
-"""Verify that the pinned Voice-of-Janus runtime lock matches local firmware blobs.
+"""Verify the pinned Voice-of-Janus / Echo-Pyramid runtime and calibration locks.
 
-This intentionally verifies Git *blob* SHA-1, not a plain file SHA-1, so values can
-be compared directly with GitHub contents API blob SHAs.
+Git *blob* SHA-1 is used so values can be compared directly with GitHub content
+blob SHAs. The verifier also checks semantic boundaries that must remain true
+across larynx, embedded-runtime and physical-calibration evolution.
 """
 
 from __future__ import annotations
@@ -42,8 +43,10 @@ def verify_local_blob(lock_section: dict[str, object], path_key: str, sha_key: s
 
 def main() -> int:
     lock = json.loads(LOCK_PATH.read_text(encoding="utf-8"))
-    if lock.get("status") != "ACTIVE_PINNED_LANGUAGE_RUNTIME":
-        raise AssertionError("runtime lock must be ACTIVE_PINNED_LANGUAGE_RUNTIME")
+    if lock.get("schema") != "janus.echo_pyramid.voice_runtime_lock.v2":
+        raise AssertionError("runtime lock schema must be v2")
+    if lock.get("status") != "ACTIVE_PINNED_LANGUAGE_RUNTIME_WITH_AIDAR_EUGENE_SPIRAL":
+        raise AssertionError("unexpected runtime lock status")
 
     canonical = lock["canonical_language"]
     require_hex40(canonical["activation_blob_sha"], "activation_blob_sha")
@@ -53,6 +56,14 @@ def main() -> int:
     )
     if canonical["profile_id"] != "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3":
         raise AssertionError("unexpected canonical Pyramid Language profile id")
+    if canonical.get("semantic_content_preserved") is not True:
+        raise AssertionError("canonical language must preserve semantic content")
+
+    larynx = lock["upstream_larynx"]
+    if larynx.get("larynx_is_language") is not False:
+        raise AssertionError("larynx must remain distinct from Pyramid Language")
+    if larynx.get("larynx_change_modifies_pyramid_parameters") is not False:
+        raise AssertionError("larynx change must not modify Pyramid Language parameters")
 
     embedded = lock["embedded_implementation"]
     if embedded.get("revision") != "ESP32-r2":
@@ -110,7 +121,47 @@ def main() -> int:
     if lock_conformance.get("direct_cross_core_usb_dsp_mutation") is not False:
         raise AssertionError("runtime lock permits cross-core USB DSP mutation")
 
-    print("JANUS Echo-Pyramid runtime lock PASS")
+    calibration = lock["hardware_calibration"]
+    if calibration.get("status") != "PENDING_DEVICE_MEASUREMENT":
+        raise AssertionError("hardware calibration must remain pending until measured")
+    if calibration.get("signal_position") != "POST_PYRAMID_LANGUAGE_PRE_SPEAKER":
+        raise AssertionError("physical calibration must remain post-language")
+    if calibration.get("measured_compensation_active") is not False:
+        raise AssertionError("unmeasured physical compensation must remain disabled")
+    if calibration.get("speaker_compensation_eq_enabled") is not False:
+        raise AssertionError("speaker compensation EQ cannot be enabled before measurement")
+    if calibration.get("language_parameter_change_requires_new_language_version") is not True:
+        raise AssertionError("language retunes must require a new language version")
+
+    verify_local_blob(calibration, "contract", "contract_blob_sha")
+    verify_local_blob(calibration, "receipt_template", "receipt_template_blob_sha")
+
+    cal_contract = json.loads((ROOT / str(calibration["contract"])).read_text(encoding="utf-8"))
+    if cal_contract.get("principle") != "CALIBRATE_THE_BODY_WITHOUT_SILENTLY_REWRITING_THE_LANGUAGE":
+        raise AssertionError("hardware calibration boundary principle missing")
+    if cal_contract.get("language_profile") != canonical["profile_id"]:
+        raise AssertionError("hardware calibration contract points to wrong language profile")
+    if cal_contract["physical_calibration_parameters"]["speaker_compensation_eq"].get("status") != "DISABLED_UNTIL_MEASURED_DEVICE_RESPONSE":
+        raise AssertionError("speaker compensation EQ must be measurement-gated")
+    if cal_contract["versioning"].get("silent_mutation") != "FORBIDDEN":
+        raise AssertionError("silent language mutation must be forbidden")
+
+    expected_locked = {
+        "anchor_band_hz",
+        "anchor_center_hz",
+        "anchor_q",
+        "anchor_gain_db",
+        "anchor_decay_s",
+        "resonators_hz",
+        "room_geometry_m",
+        "room_decay",
+        "wet",
+        "dry",
+    }
+    if set(calibration.get("language_locked_parameters", [])) != expected_locked:
+        raise AssertionError("runtime lock language-locked calibration parameter set drifted")
+
+    print("JANUS Echo-Pyramid runtime + calibration lock PASS")
     return 0
 
 
