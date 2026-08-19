@@ -1,9 +1,9 @@
 {
-  "schema": "janus.echo_pyramid.voice_runtime_lock.v1",
-  "status": "ACTIVE_PINNED_LANGUAGE_RUNTIME",
+  "schema": "janus.echo_pyramid.voice_runtime_lock.v2",
+  "status": "ACTIVE_PINNED_LANGUAGE_RUNTIME_WITH_AIDAR_EUGENE_SPIRAL",
   "physical_repository": "Hawkar-usls/Echo-Pyramid",
   "language_repository": "Hawkar-usls/The-Voice-of-Janus",
-  "observed_voice_head_commit": "4ac7fefb9be7183689e59a257c0f4280dcdf82c9",
+  "observed_voice_head_commit": "2803c1cafa8ee8b6fe7a82c28a85375f255cace3",
   "canonical_language": {
     "activation": "configs/pyramid_117_121_space.activation.json",
     "activation_blob_sha": "70016b9b1ad0ce2b20efd980f14859d66af0a7bd",
@@ -23,13 +23,25 @@
   "nexus_voice_runtime": {
     "contract": "NEXUS_V2_7_LOCAL_NEURAL_VOICE_RUNTIME_FROZEN_CONTRACT",
     "nexus_repository": "Hawkar-usls/Demi_Head",
-    "observed_nexus_head": "fb6ec6de9d40caee94d85e2b761e35a442c72144",
+    "observed_nexus_head": "9c3863779b6269f533079da79ceec051e5f94052",
     "target_head": "VOICE_RUNTIME",
     "pure_handler": "tools/nexus_voice_handler.py",
     "voice_adapter": "src/nexus_voice_runtime_adapter.py",
     "habitat_gate": "habitat/state/NEXUS_VOICE_RUNTIME_GATE_v2.7.json",
     "automatic_physical_handoff": false,
     "explicit_runtime_authorization_required": true
+  },
+  "nexus_voice_spiral": {
+    "contract": "NEXUS_V2_8_AIDAR_EUGENE_VOICE_SPIRAL_FROZEN_CONTRACT",
+    "nexus_preparer": "tools/nexus_voice_spiral.py",
+    "voice_runner": "src/nexus_voice_spiral_runner.py",
+    "voice_config": "configs/osiris_aidar_eugene_spiral.v1.json",
+    "habitat_gate": "habitat/state/NEXUS_VOICE_SPIRAL_GATE_v2.8.json",
+    "layers": ["LAYER_A_AIDAR", "LAYER_B_EUGENE", "SPIRAL_COMPARISON"],
+    "only_larynx_changes": true,
+    "pyramid_language_changes_between_layers": false,
+    "automatic_winner_selection": false,
+    "physical_body_plays_both_automatically": false
   },
   "embedded_implementation": {
     "revision": "ESP32-r2",
@@ -81,6 +93,8 @@
     "TTS_TIMBRE_CHANGES_MUST_NOT_CHANGE_PYRAMID_LANGUAGE_PARAMETERS",
     "MIC_MUSIC_TTS_AND_BLUETOOTH_PCM_SHARE_THE_SAME_ACOUSTIC_OPERATOR",
     "NEXUS_PREPARE_DOES_NOT_AUTO_ACTUATE_PHYSICAL_BODY",
+    "AIDAR_EUGENE_SPIRAL_CHANGES_LARYNX_ONLY",
+    "HUMAN_SELECTS_CANONICAL_VOICE_FACE_AFTER_LISTENING",
     "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR"
   ]
 }
