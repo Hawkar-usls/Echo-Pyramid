@@ -46,6 +46,8 @@ volatile uint32_t janusVoiceBlocks = 0;
 volatile uint32_t janusVoiceFramesL32 = 0;
 volatile uint32_t janusVoiceProcessUsEma = 0;
 volatile uint32_t janusVoiceProcessUsPeakWindow = 0;
+char janusVoiceSerialBuf[24] = {0};
+uint8_t janusVoiceSerialLen = 0;
 
 static void janusVoiceProcessChunk(int16_t* pcm, uint16_t frames) {
   const uint32_t started = micros();
@@ -57,6 +59,67 @@ static void janusVoiceProcessChunk(int16_t* pcm, uint16_t frames) {
   if (janusVoiceProcessUsEma == 0) janusVoiceProcessUsEma = elapsed;
   else janusVoiceProcessUsEma = (janusVoiceProcessUsEma * 7U + elapsed) / 8U;
   if (elapsed > janusVoiceProcessUsPeakWindow) janusVoiceProcessUsPeakWindow = elapsed;
+}
+
+static void janusVoicePrintControlState(const char* reason) {
+  Serial.printf("PYRAMID_LANGUAGE_CONTROL | %s enabled=%d depth=%u%% profile=%s\n",
+                reason ? reason : "STATE",
+                janusVoiceDsp.enabled() ? 1 : 0,
+                (unsigned)janusVoiceDsp.targetAmountPercent(),
+                janus_pyramid_117121::kProfileId);
+}
+
+static void janusVoiceApplySerialCommand(const char* cmd) {
+  if (!cmd || !cmd[0]) return;
+
+  if (strcmp(cmd, "PYR?") == 0) {
+    janusVoicePrintControlState("QUERY");
+    return;
+  }
+  if (strcmp(cmd, "PYR=OFF") == 0) {
+    janusVoiceDsp.setEnabled(false);
+    janusVoicePrintControlState("HARD_BYPASS");
+    return;
+  }
+  if (strcmp(cmd, "PYR=ON") == 0) {
+    janusVoiceDsp.setEnabled(true);
+    janusVoicePrintControlState("ENABLED");
+    return;
+  }
+  if (strncmp(cmd, "PYR=", 4) == 0) {
+    char* end = nullptr;
+    long value = strtol(cmd + 4, &end, 10);
+    if (end && *end == '\0' && value >= 0 && value <= 100) {
+      janusVoiceDsp.setAmountPercent((uint8_t)value);
+      janusVoicePrintControlState("DEPTH_SET");
+      return;
+    }
+  }
+
+  Serial.printf("PYRAMID_LANGUAGE_CONTROL | INVALID command=%s expected=PYR? | PYR=0..100 | PYR=ON | PYR=OFF\n", cmd);
+}
+
+static void janusVoiceSerialControlTick() {
+  while (Serial.available() > 0) {
+    const char c = (char)Serial.read();
+    if (c == '\r' || c == '\n') {
+      if (janusVoiceSerialLen > 0) {
+        janusVoiceSerialBuf[janusVoiceSerialLen] = '\0';
+        janusVoiceApplySerialCommand(janusVoiceSerialBuf);
+        janusVoiceSerialLen = 0;
+      }
+      continue;
+    }
+
+    if (c >= 32 && c <= 126) {
+      if (janusVoiceSerialLen + 1U < sizeof(janusVoiceSerialBuf)) {
+        janusVoiceSerialBuf[janusVoiceSerialLen++] = c;
+      } else {
+        janusVoiceSerialLen = 0;
+        Serial.println("PYRAMID_LANGUAGE_CONTROL | INPUT_OVERFLOW");
+      }
+    }
+  }
 }
 
 static void janusVoiceStatusTick() {
@@ -98,7 +161,7 @@ def compose(source: str) -> str:
 
     source = source.replace(
         INCLUDE_ANCHOR,
-        INCLUDE_ANCHOR + '\n#include "JanusPyramid117121DSP.h"',
+        INCLUDE_ANCHOR + '\n#include "JanusPyramid117121DSP.h"\n#include <stdlib.h>\n#include <string.h>',
         1,
     )
     source = source.replace(GLOBAL_ANCHOR, runtime_block(), 1)
@@ -113,7 +176,8 @@ def compose(source: str) -> str:
         + "\n                (unsigned long)janusVoiceDsp.sampleRateHz(),"
         + "\n                (unsigned)janusVoiceDsp.targetAmountPercent(),"
         + "\n                (unsigned)janusVoiceDsp.roomDelayBytes(),"
-        + "\n                (unsigned)sizeof(janusVoiceDsp));",
+        + "\n                (unsigned)sizeof(janusVoiceDsp));"
+        + "\n  Serial.println(\"Pyramid Language USB control: PYR? | PYR=0..100 | PYR=ON | PYR=OFF\");",
         1,
     )
     source = source.replace(
@@ -123,7 +187,7 @@ def compose(source: str) -> str:
     )
     source = source.replace(
         LOOP_STATUS_ANCHOR,
-        "  janusVoiceStatusTick();\n" + LOOP_STATUS_ANCHOR,
+        "  janusVoiceSerialControlTick();\n  janusVoiceStatusTick();\n" + LOOP_STATUS_ANCHOR,
         1,
     )
 
@@ -131,6 +195,7 @@ def compose(source: str) -> str:
         "// JANUS PYRAMID LANGUAGE COMPOSED LAYER\n"
         "// Profile: " + PROFILE_ID + "\n"
         "// Ordinary source PCM is preserved and acoustically colored in real time.\n"
+        "// USB tuning: PYR? | PYR=0..100 | PYR=ON | PYR=OFF\n"
         "// 117-121 Hz is a project anchor band, not the only frequency.\n"
         "// MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR\n\n"
     )
@@ -164,7 +229,7 @@ def main() -> int:
 
     out_raw = output.read_bytes()
     receipt = {
-        "schema": "janus.echo_pyramid.compose_receipt.v2.2",
+        "schema": "janus.echo_pyramid.compose_receipt.v2.3",
         "status": "PASS",
         "profile_id": PROFILE_ID,
         "language_version": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3",
@@ -177,10 +242,16 @@ def main() -> int:
         "injections": [
             "JanusPyramid117121DSP include",
             "Pyramid Language runtime + 0..100 percent depth API",
+            "USB Serial local tuning control",
             "EP_SAMPLE_RATE DSP init",
             "timed processInPlace immediately before ep.write(chunk.mono, chunk.frames)",
             "10-second DSP real-time budget telemetry",
         ],
+        "usb_control": {
+            "network_io": false,
+            "commands": ["PYR?", "PYR=0..100", "PYR=ON", "PYR=OFF"],
+            "purpose": "Local A/B acoustic tuning without reflashing the device"
+        },
         "real_time_budget": {
             "chunk_frames": 256,
             "sample_rate_hz": 44100,
