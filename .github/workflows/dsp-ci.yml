@@ -1,0 +1,16 @@
+name: Echo Pyramid DSP CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  portable-dsp:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build portable DSP test
+        run: g++ -std=c++11 -O2 -Wall -Wextra -pedantic -Ifirmware tests/test_dsp.cpp -o test_dsp
+      - name: Run portable DSP test
+        run: ./test_dsp
