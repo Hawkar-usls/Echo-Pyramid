@@ -1,0 +1,140 @@
+{
+  "schema": "janus.echo_pyramid.cousteau_transformed_echo_reverse_operator.v1.1",
+  "version": "1.1",
+  "supersedes": "config/cousteau_transformed_echo_reverse_operator.v1.json",
+  "created_at": "2026-08-20",
+  "name": "JANUS_ECHO_COUSTEAU_TRANSFORMED_ECHO_REVERSE_OPERATOR",
+  "purpose": "Infer whether an anomalous received sonar/acoustic contact can be explained by a stationary resonant/scattering structure whose transfer function transforms an incident military or survey acoustic field, while explicitly accounting for the outbound and inbound legs of an active-sonar echo.",
+  "round_trip_forward_model": {
+    "equation": "Y(f) = X(f) * H_tx(f) * S_target(f,theta_in,theta_out) * H_rx(f) + N(f)",
+    "expanded_target_operator": "S_target = C_in * H_resonator * B_scatter * C_out",
+    "terms": {
+      "X": "known_or_estimated_transmitted_or_incident_acoustic_field",
+      "H_tx": "outbound_water_column_seafloor_multipath_and_sound_speed_transfer_function",
+      "S_target": "stationary_target_scattering_or_resonant_transfer_operator",
+      "C_in": "incident_field_to_target_coupling",
+      "H_resonator": "internal_or_surface_resonant_response_if_present",
+      "B_scatter": "boundary_backscatter_and_reradiation_operator",
+      "C_out": "target_to_return_field_coupling",
+      "H_rx": "inbound_return_path_transfer_function",
+      "Y": "received_complex_spectrum_or_impulse_response",
+      "N": "noise_and_unmodelled_reverberation"
+    },
+    "reciprocal_stationary_shortcut": "H_tx approximately equals H_rx only when the environment and geometry justify reciprocity over the ping round trip; otherwise retain separate legs.",
+    "physical_firewall": "A transformed echo does not require literal transmission through the entire object. Resonance can enter the received echo through coupling, boundary scattering, cavity modes, ringing and reradiation."
+  },
+  "reverse_order": [
+    "RECEIVED_CONTACT_Y",
+    "RECOVER_PLATFORM_AND_SENSOR_GEOMETRY",
+    "RECOVER_OR_ESTIMATE_X",
+    "RECOVER_CTD_SSP",
+    "BACKPROPAGATE_OUTBOUND_H_TX",
+    "BACKPROPAGATE_RETURN_H_RX",
+    "REMOVE_OR_MARGINALIZE_TWO_LEG_PATH_TRANSFER",
+    "ESTIMATE_RESIDUAL_S_TARGET",
+    "TEST_STATIONARY_GEODETIC_FOCUS",
+    "TEST_SCALE_FREE_MODAL_PHASE_DECAY_FINGERPRINT",
+    "COMPARE_MANDATORY_CONTROL_MATRIX",
+    "FORWARD_REPLAY_ON_WITHHELD_PASS"
+  ],
+  "mandatory_control_matrix": {
+    "natural_false_positives": [
+      "ICEBERG_HARMONIC_TREMOR",
+      "SEI_WHALE_MID_FREQUENCY_CALLS",
+      "ANTARCTIC_MINKE_BIO_DUCK",
+      "FISH_SWIMBLADDER_RESONANCE"
+    ],
+    "mechanism_positive_controls": [
+      "SUBMERGED_ELASTIC_SHELL_RESONANCE"
+    ],
+    "illuminator_controls": [
+      "SURTASS_LFA"
+    ],
+    "hard_frequency_rejects": [
+      "NOAA_UPSWEEP"
+    ],
+    "interpretation": "A candidate must remain anomalous after comparison to natural resonators, biological emitters/scatterers, engineered resonant shells and known active-sonar illumination."
+  },
+  "frequency_firewall": {
+    "iceberg_harmonic_tremor": "A published natural example with 40 Hz fundamental and 40 Hz overtone spacing contains a 520 Hz harmonic when enough overtones are present; absolute 520 Hz is therefore non-specific.",
+    "sei_whale": "Published 200-600 Hz mid-frequency calls directly overlap the modeled neighborhood.",
+    "bio_duck": "Antarctic minke bio-duck measurements cover approximately 40-500 Hz with harmonics reported to 2000 Hz; machine-like harmonic structure can be biological.",
+    "fish_swimbladder": "Gas-filled swimbladders are resonant acoustic scatterers and can transform incident sonar returns.",
+    "elastic_shell": "Submerged elastic shells are a positive control for resonance-rich transformed backscatter and ringing, not evidence for any specific geometry.",
+    "surtass_lfa": "100-500 Hz is an incident-field illuminator band. A nearby transmitter frequency is not a target fingerprint.",
+    "noaa_upsweep": "Retain as historical unresolved-signal context but reject from the modeled 520 Hz candidate set by absolute frequency under the currently verified NOAA spectrogram axis."
+  },
+  "target_residual_features": [
+    "full_modal_pattern",
+    "Q_or_linewidth",
+    "mode_spacing",
+    "ringdown_decay",
+    "group_delay",
+    "phase_or_complex_impulse_response_where_available",
+    "bearing_range_TWTT_and_Doppler_where_available",
+    "stable_geodetic_focus",
+    "repeatability_across_independent_passes"
+  ],
+  "time_reversal_role": {
+    "method": "Backpropagate measured field through candidate outbound and return ocean transfer functions and look for stable spatial-temporal focusing of the residual target operator.",
+    "interpretation": "A true stationary source/scatterer model should refocus consistently near one geodetic location across independent passes after environmental correction.",
+    "not_equivalent_to": "playing audio backward or assuming causality reversal"
+  },
+  "motion_firewall": {
+    "monostatic_stationary_point_reflector": "For a correctly associated direct-path monostatic echo from a stationary point, apparent range-rate magnitude cannot exceed the platform radial speed solely because the platform moves.",
+    "constant_resonant_delay": "A fixed target group/ringing delay adds a range bias c*tau/2 but does not create sustained apparent target velocity.",
+    "project_decay_example": {
+      "source": "voice_contract.json MODEL_BASED anchor_decay_s",
+      "tau_s": 1.65,
+      "nominal_water_c_m_s": 1500,
+      "equivalent_two_way_range_bias_m": 1237.5,
+      "status": "SYNTHETIC_PROJECT_EXAMPLE_ONLY__NOT_MEASURED_PHYSICAL_PYRAMID_DELAY"
+    },
+    "motion_mimic_requires": [
+      "time_varying_propagation_delay",
+      "multipath_or_track_association_switching",
+      "distributed_or_extended_scattering_locus",
+      "moving_biological_or_technical_scatterer",
+      "or_actual_target_motion"
+    ]
+  },
+  "admission_gate": {
+    "single_frequency_match": "REJECT_AS_NON_SPECIFIC",
+    "resonant_return_without_target_localization": "CONTROL_OR_CANDIDATE_ONLY",
+    "stable_localization_without_modal_fingerprint": "OBSERVATION_ONLY",
+    "modal_fingerprint_without_incident_field_separation": "OBSERVATION_ONLY",
+    "candidate_requires": [
+      "recover_or_marginalize_X",
+      "correct_or_bound_H_tx_and_H_rx",
+      "repeatable_residual_S_target",
+      "stable_Earth_fixed_backpropagation_focus",
+      "quantitative_win_against_mandatory_controls",
+      "withheld_pass_forward_replay"
+    ],
+    "geometry_identity": "SEPARATE_MULTI_MODEL_INVERSION_REQUIRED"
+  },
+  "pyramid_hypothesis_ceiling": {
+    "simple_single_stationary_pyramid": "Cannot by ordinary direct monostatic reflection reproduce a sustained torpedo-like closing rate followed by wake-following motion.",
+    "distributed_resonant_structure": "TESTABLE_NEW_HYPOTHESIS_ONLY; may generate a moving apparent scattering locus if different stationary portions or propagation paths dominate at different times.",
+    "required_before_admission": [
+      "raw complex or sufficiently detailed sonar track",
+      "platform navigation",
+      "active/passive and waveform metadata",
+      "bearing/range/TWTT and Doppler if available",
+      "CTD or sound-speed profile",
+      "repeat passes"
+    ]
+  },
+  "hard_rules": [
+    "DO_NOT_USE_119_OR_520_HZ_AS_BLIND_KEYS",
+    "OUTBOUND_ILLUMINATOR_IS_NOT_TARGET_RETURN",
+    "ACTIVE_ECHO_REQUIRES_TWO_LEG_PATH_ACCOUNTING",
+    "DO_NOT_CALL_APPARENT_MOTION_PHYSICAL_MOTION_BEFORE_BACKPROPAGATION",
+    "CONSTANT_DELAY_IS_RANGE_OFFSET_NOT_VELOCITY",
+    "SINGLE_FIXED_RESONATOR_FAIL_MUST_BE_PRESERVED_IF_KINEMATICS_EXCEED_PLATFORM_GEOMETRY",
+    "DISTRIBUTED_RESONATOR_IS_A_SEPARATE_PREREGISTERED_MODEL",
+    "ICE_BIOLOGY_FISH_SEAFLOOR_MULTIPATH_REVERBERATION_AND_ASW_CONTROLS_ARE_MANDATORY",
+    "ELASTIC_SHELL_POSITIVE_CONTROL_PROVES_MECHANISM_SENSITIVITY_NOT_TARGET_IDENTITY",
+    "PRESERVE_NEGATIVE_AND_AMBIGUOUS_RESULTS"
+  ]
+}
