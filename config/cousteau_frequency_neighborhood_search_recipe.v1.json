@@ -1,0 +1,84 @@
+{
+  "schema": "janus.echo_pyramid.cousteau_frequency_neighborhood_search_recipe.v1",
+  "version": "1.0",
+  "created_at": "2026-08-20",
+  "parent_recipe": "config/underwater_resonator_recipe.v1.json",
+  "purpose": "Search historical and modern underwater acoustic cases for measured spectra resembling the modeled flooded-pyramid prior, while preventing single-frequency confirmation bias.",
+  "model_prior": {
+    "nominal_band_hz": [511.6618075801749, 529.1545189504374],
+    "nominal_center_hz": 520.4081632653061,
+    "ctd_sensitivity_envelope_hz": [504.8396501457726, 543.265306122449],
+    "status": "STARTING_PRIOR_ONLY__NOT_A_UNIVERSAL_PYRAMID_FREQUENCY"
+  },
+  "search_order": [
+    "RECOVER_PUBLISHED_SPECTRUM_WITHOUT_TARGET_LABEL_BIAS",
+    "MEASURE_OR_RECORD_FUNDAMENTAL_AND_HARMONICS",
+    "COMPARE_WITH_MODEL_PRIOR_POST_HOC",
+    "TEST_SCALE_FREE_MODAL_RATIOS",
+    "TEST_Q_DECAY_PHASE_AND_RINGING",
+    "TEST_RESPONSE_TO_ACTIVE_INSONIFICATION",
+    "TEST_STATIONARY_GEODETIC_FOCUS",
+    "COMPARE_BIOLOGICAL_GEOLOGICAL_AND_ENGINEERED_CONTROLS",
+    "WITHHELD_FORWARD_REPLAY"
+  ],
+  "mandatory_controls": [
+    {
+      "id": "ICEBERG_HARMONIC_TREMOR",
+      "known_physics": "natural iceberg contact with seafloor/iceberg produces harmonic tremor",
+      "fundamental_hz": 40,
+      "overtone_spacing_hz": 40,
+      "reported_max_visible_overtones": 15,
+      "near_prior_line_hz": 520,
+      "difference_from_model_center_hz": 0.40816326530614333,
+      "relative_difference_percent": 0.07843137254902362,
+      "role": "CRITICAL_NATURAL_FALSE_POSITIVE"
+    },
+    {
+      "id": "ANTARCTIC_MINKE_BIO_DUCK",
+      "fundamental_energy_band_hz": [50, 500],
+      "harmonics_reported_to_hz": 2000,
+      "role": "BIOLOGICAL_REPETITIVE_HARMONIC_FALSE_POSITIVE"
+    },
+    {
+      "id": "SEI_WHALE_MID_FREQUENCY_CALLS",
+      "reported_mid_frequency_band_hz": [200, 600],
+      "nominal_prior_overlap": true,
+      "role": "BIOLOGICAL_DIRECT_BAND_OVERLAP_CONTROL"
+    },
+    {
+      "id": "FISH_SWIMBLADDER_RESONANCE",
+      "role": "BIOLOGICAL_CAVITY_RESONANCE_CONTROL",
+      "note": "species, size and depth can place resonances near hundreds of hertz; exact frequency is state dependent"
+    },
+    {
+      "id": "SUBMERGED_ELASTIC_SHELL_RESONANCE",
+      "role": "ENGINEERED_PHYSICS_POSITIVE_CONTROL",
+      "note": "submerged shells can return resonance-rich echoes with ringing and fluid-state-dependent spectra"
+    }
+  ],
+  "military_illumination_context": {
+    "system": "SURTASS_LFA",
+    "transmit_band_hz": [100, 500],
+    "gap_to_nominal_prior_low_edge_hz": 11.661807580174923,
+    "interpretation": "close illuminator band, not a matching return by itself; a passive linear target does not create absent frequencies without broadband/transient content or nonlinear/time-varying behavior"
+  },
+  "watchlist_without_public_numeric_spectrum": [
+    "GALLAUDET_1980S_SUBMARINE_SONAR_ACCOUNT",
+    "SOVIET_QUACKERS",
+    "NUNAVUT_FURY_AND_HECLA_2016_PING"
+  ],
+  "reject_as_absolute_frequency_match": [
+    {
+      "id": "NOAA_UPSWEEP",
+      "published_spectrogram_band_hz": [0, 64],
+      "reason": "far below modeled 512-529 Hz neighborhood"
+    }
+  ],
+  "hard_rules": [
+    "ONE_520_HZ_PEAK_IS_NOT_A_PYRAMID",
+    "POST_HOC_FREQUENCY_OVERLAP_IS_CALIBRATION_NOT_DISCOVERY",
+    "BIOLOGY_AND_ICE_MUST_BE_BEATEN_BEFORE_GEOMETRY_PROMOTION",
+    "FREQUENCY_RATIOS_Q_DECAY_PHASE_AND_ANGLE_DEPENDENCE_OUTRANK_ABSOLUTE_HZ",
+    "NO_HISTORICAL_CASE_IS_RELABELED_AS_PYRAMID_WITHOUT_RAW_DATA"
+  ]
+}
