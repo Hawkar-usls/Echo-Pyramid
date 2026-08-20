@@ -1,0 +1,193 @@
+{
+  "schema": "janus.echo_pyramid.underwater_resonator_recipe.v1",
+  "version": "1.0",
+  "created_at": "2026-08-20",
+  "name": "UNDERWATER_PYRAMID_ACOUSTIC_FINGERPRINT",
+  "repository_role": "MODEL_AND_CALIBRATION_RECIPE_NOT_ARCHAEOLOGICAL_CLAIM",
+  "parent_contract": "config/voice_contract.json",
+  "parent_profile": {
+    "profile": "PYRAMID_LANGUAGE_117_121_ANCHORED_SPACE_v0.3/ESP32-r2",
+    "status": "MODEL_BASED_117_121_HZ_ANCHORED_EFFECT",
+    "air_anchor_band_hz": [117.0, 121.0],
+    "air_anchor_center_hz": 119.0,
+    "air_speed_of_sound_m_s": 343.0,
+    "room_geometry_m": [10.45, 5.20, 5.80]
+  },
+  "physics_boundary": {
+    "core_statement": "A submerged structure does not need to emit sound spontaneously. It can selectively scatter, ring and transform an incident broadband acoustic field. The measurable object is its transfer function, target-strength spectrum and impulse response.",
+    "not_assumed": [
+      "ancient pyramids were designed as acoustic transmitters",
+      "119 Hz is a universal physical pyramid frequency",
+      "a single spectral peak proves pyramidal geometry",
+      "a bathymetric shape inferred from satellite gravity is a physical structure"
+    ]
+  },
+  "medium_model": {
+    "air_reference_speed_m_s": 343.0,
+    "seawater_nominal_speed_m_s": 1500.0,
+    "seawater_speed_m_s_must_be_measured_with_ctd": true,
+    "reason": "sound speed in seawater varies with temperature, salinity and pressure/depth",
+    "nominal_speed_ratio_water_to_air": 4.373177842565598
+  },
+  "naive_same_geometry_flooded_rigid_cavity_prior": {
+    "formula": "f_water ~= f_air * c_water/c_air",
+    "nominal_seawater_1500_m_s": {
+      "band_hz": [511.6618075801749, 529.1545189504374],
+      "center_hz": 520.4081632653061
+    },
+    "sensitivity_for_c_water_1480_to_1540_m_s": {
+      "band_low_hz_at_1480": 504.8396501457726,
+      "center_hz_at_1480": 513.469387755102,
+      "band_high_hz_at_1540": 543.265306122449
+    },
+    "ceiling": "STARTING_PRIOR_ONLY__REAL_WET_MODES_REQUIRE_MEASUREMENT_OR_COUPLED_FLUID_STRUCTURE_SIMULATION"
+  },
+  "state_branches": [
+    {
+      "state": "FULLY_FLOODED_RIGID_CAVITY",
+      "prediction": "fluid acoustic modes tend to scale approximately with local sound speed for unchanged rigid geometry; openings and losses modify Q and mode positions"
+    },
+    {
+      "state": "SEALED_AIR_CAVITY_SUBMERGED",
+      "prediction": "internal air modes can remain near dry-cavity values while structural modes and exterior radiation change through water added mass and damping"
+    },
+    {
+      "state": "PARTIALLY_FLOODED",
+      "prediction": "hybrid air-water free-surface and structural modes; fluid level becomes an additional state variable and may create a distinctive multi-mode signature"
+    },
+    {
+      "state": "SOLID_OR_SEDIMENT_BURIED",
+      "prediction": "cavity ringing may be weak or inaccessible; search shifts toward elastic/scattering resonances and sub-bottom/seismic impedance contrasts"
+    }
+  ],
+  "reference_experiment": {
+    "objects": [
+      "scaled hollow square pyramid matching chosen geometry",
+      "same-volume rectangular cavity control",
+      "cone control",
+      "irregular rock control",
+      "solid pyramid control"
+    ],
+    "states": [
+      "dry_air",
+      "sealed_submerged",
+      "fully_flooded",
+      "25_percent_flooded",
+      "50_percent_flooded",
+      "75_percent_flooded",
+      "sediment_partially_buried",
+      "sediment_fully_buried"
+    ],
+    "excitation": {
+      "preferred": "calibrated underwater acoustic projector with logarithmic or broadband chirp",
+      "sweep_hz_lab_default": [20, 5000],
+      "level_rule": "minimum level required for repeatable SNR; comply with tank and field environmental and equipment limits"
+    },
+    "receivers": {
+      "preferred": "3_or_more_calibrated_hydrophones",
+      "record": [
+        "raw_pressure_waveforms",
+        "projector_reference_channel",
+        "temperature",
+        "salinity",
+        "pressure_depth",
+        "orientation",
+        "range",
+        "burial_fraction"
+      ]
+    },
+    "outputs": [
+      "impulse_response",
+      "frequency_response",
+      "target_strength_spectrum",
+      "modal_frequency_list",
+      "Q_per_mode",
+      "decay_time_per_mode",
+      "phase_response",
+      "angle_dependence",
+      "repeatability"
+    ]
+  },
+  "scale_invariant_fingerprint": {
+    "primary_features": [
+      "frequency_ratios_fi_over_f1",
+      "dimensionless_frequency_fi_L_over_c",
+      "relative_modal_amplitudes",
+      "Q_ratios",
+      "decay_time_ratios",
+      "phase_relationships",
+      "orientation_periodicity"
+    ],
+    "reason": "unknown target scale moves absolute frequencies; ratios and normalized frequencies are more transferable than a single 119 or 520 Hz peak"
+  },
+  "field_search_recipe": {
+    "exposed_target": [
+      "multibeam_or_side_scan_for_geometry",
+      "broadband_active_sonar_for_target_strength_spectrum",
+      "multi_aspect_repeat_passes",
+      "matched_filter_against_reference_library"
+    ],
+    "buried_target": [
+      "low_frequency_sub_bottom_profiler_or_seismic_reflection",
+      "broadband_chirp_or_parametric_source_when_suitable",
+      "search_for_repeating_impedance_edges_and_resonant_scattering",
+      "do_not_expect_high_frequency_water_column_sonar_to_see_through_hundreds_of_meters_of_sediment"
+    ],
+    "candidate_gate": {
+      "required": [
+        "same spectral or mode pattern on at least 3 independent passes",
+        "stable geolocation after navigation correction",
+        "multi-aspect geometry consistent with one stationary target",
+        "better template score than natural and geologic controls",
+        "independent instrument or survey replication"
+      ],
+      "forbidden": [
+        "single_peak_only",
+        "single_pass_only",
+        "recenter_predicted_coordinate_to_candidate",
+        "claim_artificial_origin_from_spectrum_alone"
+      ]
+    }
+  },
+  "love_edem_exact_point_binding": {
+    "lat_deg": -3.8654180644718967,
+    "lon_deg_east": 3.854924373538978,
+    "current_context": {
+      "gmrt_synthesized_seafloor_depth_m_approx": 5065,
+      "gebco_2026_tid": 40,
+      "gebco_tid_interpretation": "satellite_gravity_prediction",
+      "gmrt_multibeam_swath_hits_within_25km": 0,
+      "ncei_multibeam_hits_within_25km": 0,
+      "globsed_v3_nearest_cell_sediment_thickness_m": 467
+    },
+    "bisector_calibration_rule": "Acoustic localization may measure the residual between a detected target and the frozen bisector prediction. It must never recenter the bisector after seeing the target.",
+    "next_real_measurement": "direct low-frequency sub-bottom or seismic or dedicated acoustic survey through the frozen coordinate"
+  },
+  "scientific_sources": [
+    {
+      "title": "NOAA marine acoustics fundamentals",
+      "claim": "seawater sound speed is approximately 1500 m/s and depends on temperature, pressure and salinity",
+      "url": "https://repository.library.noaa.gov/view/noaa/12566/noaa_12566_DS1.pdf"
+    },
+    {
+      "title": "NOAA Sub-Bottom Profiler",
+      "claim": "low-frequency acoustic pulses can penetrate the seafloor and reflect from subsurface sediment horizons",
+      "url": "https://oceanexplorer.noaa.gov/technology/sub-bottom-profiler/"
+    },
+    {
+      "title": "Flow-induced acoustic radiation of a submerged PPR pipe",
+      "claim": "submerged structural resonance can produce a stable spectral line and wet natural frequencies are shifted by fluid added-mass effects",
+      "url": "https://link.springer.com/article/10.1007/s42452-026-09165-0"
+    }
+  ],
+  "hard_rules": [
+    "MODEL_BASED_119_HZ_PROFILE != MEASURED_ANCIENT_PYRAMID_MODE",
+    "UNDERWATER_SCALE_PRIOR != UNIVERSAL_FREQUENCY",
+    "MEASURE_CTD_BEFORE_PRECISE_FREQUENCY_PREDICTION",
+    "SEARCH_SPECTRAL_PATTERN_NOT_ONE_MAGIC_PEAK",
+    "BURIED_TARGET_REQUIRES_SUB_BOTTOM_OR_SEISMIC",
+    "ACOUSTIC_HIT_CALIBRATES_RESIDUAL_NOT_THE_BISECTOR",
+    "NO_RECENTERING",
+    "REPEAT_OR_REJECT"
+  ]
+}
