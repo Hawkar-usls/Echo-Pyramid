@@ -1,0 +1,129 @@
+{
+  "schema": "janus.echo_pyramid.underwater_resonator_reverse_recipe.v1",
+  "version": "1.0",
+  "created_at": "2026-08-20",
+  "name": "UNDERWATER_PYRAMID_ACOUSTIC_FINGERPRINT_REVERSE",
+  "parent": "config/underwater_resonator_recipe.v1.json",
+  "status": "LOGICALLY_REVERSED__EMPIRICAL_IDENTIFIABILITY_NOT_YET_ESTABLISHED",
+  "purpose": "Test whether an unknown underwater target can be inferred from measured acoustics without leaking pyramid geometry, scale, 119 Hz, or 520 Hz into the blind-search input.",
+  "janus_reverse_operator": [
+    "BLIND_ACOUSTIC_SEARCH",
+    "CANDIDATE_STATIONARITY_AND_REPEATABILITY",
+    "SCALE_FREE_FINGERPRINT_EXTRACTION",
+    "MODE_FREQUENCIES_Q_DECAY_PHASE",
+    "TRANSFER_FUNCTION_ESTIMATION",
+    "HYDROPHONE_ARRAY_FIELD",
+    "KNOWN_BROADBAND_EXCITATION",
+    "MEDIUM_AND_FLOOD_STATE_INFERENCE",
+    "DRY_EQUIVALENT_RESPONSE_POSTERIOR",
+    "GEOMETRY_CLASS_POSTERIOR",
+    "SCALE_ORIENTATION_AND_MATERIAL_POSTERIOR",
+    "FORWARD_REPLAY_TO_OBSERVED_FIELD",
+    "MATCH_OR_REJECT"
+  ],
+  "information_firewall": {
+    "forbidden_blind_priors": [
+      "target_is_a_pyramid",
+      "target_characteristic_length_L",
+      "117_121_Hz_as_search_band",
+      "520_Hz_as_search_band",
+      "candidate_position_shift_to_match_bisector",
+      "manual_selection_of_pretty_peaks"
+    ],
+    "allowed_environmental_priors": [
+      "transmitted_chirp_waveform",
+      "hydrophone_positions_and_calibration",
+      "CTD_sound_speed_profile",
+      "navigation",
+      "bathymetry_and_sediment_model_with_provenance",
+      "instrument_response"
+    ]
+  },
+  "critical_reverse_correction": {
+    "finding": "fi*L/c is not a first-stage blind feature because L is unknown in the reverse problem.",
+    "first_stage_scale_free_features": [
+      "frequency_ratios_fi_over_f1",
+      "Q_ratios",
+      "decay_time_ratios",
+      "relative_modal_amplitudes",
+      "phase_topology",
+      "multi_aspect_angular_periodicity",
+      "repeatable_impulse_response_peak_spacing"
+    ],
+    "second_stage_after_class_match": [
+      "estimate_scale_L_from_absolute_mode_frequencies_and_library_or_forward_model",
+      "then_compute_dimensionless_frequencies_fi_L_over_c",
+      "estimate_orientation_material_and_flood_state_jointly"
+    ]
+  },
+  "inverse_steps": [
+    {
+      "step": 1,
+      "input": "raw hydrophone channels plus projector reference",
+      "operation": "detect stationary repeatable scattering/ringing candidate without geometry labels",
+      "output": "candidate windows and localization posterior"
+    },
+    {
+      "step": 2,
+      "input": "known excitation X(f) and received field Y_i(f)",
+      "operation": "estimate channel/target transfer functions H_i(f) with propagation and instrument corrections",
+      "output": "multi-receiver complex H_i(f)"
+    },
+    {
+      "step": 3,
+      "input": "H_i(f)",
+      "operation": "extract modal peaks, linewidth/Q, ringdown decay, complex phase and aspect dependence",
+      "output": "measured modal feature set"
+    },
+    {
+      "step": 4,
+      "input": "modal feature set",
+      "operation": "construct scale-free vector before any target-size assumption",
+      "output": "blind fingerprint"
+    },
+    {
+      "step": 5,
+      "input": "blind fingerprint plus preregistered reference library",
+      "operation": "jointly score hollow pyramid, solid pyramid, box, cone, irregular rock and natural geological controls across flood/burial states",
+      "output": "geometry_class_posterior and state_posterior"
+    },
+    {
+      "step": 6,
+      "input": "class/state posterior plus absolute frequencies and CTD c(z)",
+      "operation": "infer characteristic scale, orientation, material and state with uncertainty",
+      "output": "parameter posterior"
+    },
+    {
+      "step": 7,
+      "input": "parameter posterior",
+      "operation": "generate forward predicted underwater transfer function and compare with withheld observed channels/aspects",
+      "output": "posterior predictive residual"
+    }
+  ],
+  "non_uniqueness_rule": "A resonance spectrum alone does not uniquely determine geometry. The reverse output is a posterior over geometry/state/scale/material, not an exact shape declaration. Ambiguity must be retained when multiple controls reproduce the field.",
+  "closure_gate": {
+    "name": "JANUS_BACKFORTH_ACOUSTIC_CLOSURE",
+    "sequence": "OBSERVATION -> REVERSE_INFERENCE -> FORWARD_REPLAY -> HELDOUT_OBSERVATION",
+    "pass_requires": [
+      "blind class inference beats matched non-pyramid controls",
+      "same inferred class/state repeats on independent passes",
+      "forward replay predicts withheld hydrophone/aspect data within preregistered residual tolerance",
+      "localization remains stable after CTD correction",
+      "no bisector recentering"
+    ],
+    "fail_if": [
+      "classification depends on 117-121 or 512-529 Hz prior",
+      "only one peak carries the decision",
+      "multiple control geometries are statistically indistinguishable",
+      "forward replay fails heldout channels",
+      "candidate location moves materially when environment model changes within measured uncertainty"
+    ]
+  },
+  "field_branch_for_burial": {
+    "context": "If target is beneath thick sediment, direct high-frequency water-column resonance may be inaccessible.",
+    "reverse_input": "low-frequency sub-bottom/seismic complex reflections and repeated multi-offset data",
+    "inference_target": "coherent impedance geometry and elastic/scattering modes",
+    "rule": "Do not apply the simple flooded-cavity 520 Hz prior to a buried target."
+  },
+  "claim_ceiling": "REVERSE_METHOD_SPECIFICATION_ONLY__NO_UNDERWATER_PYRAMID_IDENTIFIED"
+}
