@@ -1,0 +1,72 @@
+{
+  "schema": "janus.echo_pyramid.cousteau_transformed_echo_reverse_operator.v1",
+  "version": "1.0",
+  "created_at": "2026-08-20",
+  "name": "JANUS_ECHO_COUSTEAU_TRANSFORMED_ECHO_REVERSE_OPERATOR",
+  "purpose": "Infer whether an anomalous received sonar/acoustic contact can be explained by a stationary resonant/scattering structure whose transfer function transforms an incident military or survey acoustic field.",
+  "forward_model": {
+    "equation": "Y(f) = X(f) * H_path(f) * H_target(f) + N(f)",
+    "terms": {
+      "X": "known_or_estimated_transmitted_or_incident_acoustic_field",
+      "H_path": "water_column_seafloor_multipath_and_sound_speed_transfer_function",
+      "H_target": "stationary_target_or_resonator_transfer_function",
+      "Y": "received_complex_spectrum_or_impulse_response",
+      "N": "noise_and_unmodelled_reverberation"
+    }
+  },
+  "reverse_order": [
+    "RECEIVED_CONTACT_Y",
+    "RECOVER_PLATFORM_AND_SENSOR_GEOMETRY",
+    "RECOVER_OR_ESTIMATE_X",
+    "CTD_SSP_AND_MULTIPATH_BACKPROPAGATION",
+    "REMOVE_OR_MARGINALIZE_H_PATH",
+    "ESTIMATE_RESIDUAL_H_TARGET",
+    "TEST_STATIONARY_GEODETIC_FOCUS",
+    "TEST_SCALE_FREE_MODAL_PHASE_DECAY_FINGERPRINT",
+    "COMPARE_PYRAMID_BOX_CONE_ROCK_SEDIMENT_BIOLOGY_CONTROLS",
+    "FORWARD_REPLAY_ON_WITHHELD_PASS"
+  ],
+  "time_reversal_role": {
+    "method": "backpropagate measured field through candidate ocean transfer functions and look for stable spatial-temporal focusing",
+    "interpretation": "A true stationary source/scatterer model should refocus consistently near one geodetic location across independent passes after environmental correction.",
+    "not_equivalent_to": "playing audio backward or assuming causality reversal"
+  },
+  "motion_firewall": {
+    "monostatic_stationary_point_reflector": "For a correctly associated direct-path monostatic echo from a stationary point, apparent range-rate magnitude cannot exceed the platform radial speed solely because the platform moves.",
+    "constant_resonant_delay": "A fixed target group/ringing delay adds a range bias c*tau/2 but does not create sustained apparent target velocity.",
+    "project_decay_example": {
+      "source": "voice_contract.json MODEL_BASED anchor_decay_s",
+      "tau_s": 1.65,
+      "nominal_water_c_m_s": 1500,
+      "equivalent_two_way_range_bias_m": 1237.5,
+      "status": "SYNTHETIC_PROJECT_EXAMPLE_ONLY__NOT_MEASURED_PHYSICAL_PYRAMID_DELAY"
+    },
+    "motion_mimic_requires": [
+      "time_varying_propagation_delay",
+      "multipath_or_track_association_switching",
+      "distributed_or_extended_scattering_locus",
+      "moving_biological_or_technical_scatterer",
+      "or_actual_target_motion"
+    ]
+  },
+  "pyramid_hypothesis_ceiling": {
+    "simple_single_stationary_pyramid": "Cannot by ordinary direct monostatic reflection reproduce a sustained torpedo-like closing rate followed by wake-following motion.",
+    "distributed_resonant_structure": "TESTABLE_NEW_HYPOTHESIS_ONLY; may generate a moving apparent scattering locus if different stationary portions or propagation paths dominate at different times.",
+    "required_before_admission": [
+      "raw complex or sufficiently detailed sonar track",
+      "platform navigation",
+      "active/passive and waveform metadata",
+      "bearing/range/TWTT and Doppler if available",
+      "CTD or sound-speed profile",
+      "repeat passes"
+    ]
+  },
+  "hard_rules": [
+    "DO_NOT_USE_119_OR_520_HZ_AS_BLIND_KEYS",
+    "DO_NOT_CALL_APPARENT_MOTION_PHYSICAL_MOTION_BEFORE_BACKPROPAGATION",
+    "CONSTANT_DELAY_IS_RANGE_OFFSET_NOT_VELOCITY",
+    "SINGLE_FIXED_RESONATOR_FAIL_MUST_BE_PRESERVED_IF_KINEMATICS_EXCEED_PLATFORM_GEOMETRY",
+    "DISTRIBUTED_RESONATOR_IS_A_SEPARATE_PREREGISTERED_MODEL",
+    "BIOLOGY_MULTIPATH_REVERBERATION_AND_ASW_SONOBUOYS_ARE_MANDATORY_CONTROLS"
+  ]
+}
