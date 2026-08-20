@@ -1,84 +1,141 @@
 {
   "schema": "janus.echo_pyramid.cousteau_frequency_neighborhood_search_recipe.v1",
-  "version": "1.0",
+  "version": "1.1",
   "created_at": "2026-08-20",
+  "research_branch": "Janus-Echo-Кусто",
   "parent_recipe": "config/underwater_resonator_recipe.v1.json",
-  "purpose": "Search historical and modern underwater acoustic cases for measured spectra resembling the modeled flooded-pyramid prior, while preventing single-frequency confirmation bias.",
+  "purpose": "Search historical and modern underwater acoustic cases for measured spectra resembling the modeled flooded-pyramid prior while explicitly modeling orientation, occlusion, biofouling, multipath and secondary environmental transformations. Single-frequency overlap is calibration only, never identification.",
   "model_prior": {
     "nominal_band_hz": [511.6618075801749, 529.1545189504374],
     "nominal_center_hz": 520.4081632653061,
     "ctd_sensitivity_envelope_hz": [504.8396501457726, 543.265306122449],
     "status": "STARTING_PRIOR_ONLY__NOT_A_UNIVERSAL_PYRAMID_FREQUENCY"
   },
+  "composite_echo_model": {
+    "equation": "Y(f)=SUM_p[X(f)*H_path_p(f)*H_target_p(f)*H_secondary_p(f)] + N(f)",
+    "meaning": "The received anomaly may be a direct target return, a resonator-modified return, a secondary interaction with ice/biology/bottom/elastic structures, or a coherent sum of several paths. Do not assume a signal literally traversed every listed control.",
+    "required_path_hypotheses": [
+      "DIRECT_SOURCE_TO_TARGET_TO_RECEIVER",
+      "SOURCE_TO_TARGET_TO_BOTTOM_OR_ICE_TO_RECEIVER",
+      "SOURCE_TO_BIOLOGY_OR_ICE_TO_TARGET_TO_RECEIVER",
+      "TARGET_RINGING_PLUS_BACKGROUND_BIOLOGICAL_EMISSION",
+      "MULTIPATH_SURFACE_BOTTOM_TARGET_INTERFERENCE",
+      "DISTRIBUTED_REVERBERATION_WITH_MOVING_APPARENT_SCATTERING_CENTER"
+    ]
+  },
   "search_order": [
-    "RECOVER_PUBLISHED_SPECTRUM_WITHOUT_TARGET_LABEL_BIAS",
-    "MEASURE_OR_RECORD_FUNDAMENTAL_AND_HARMONICS",
-    "COMPARE_WITH_MODEL_PRIOR_POST_HOC",
-    "TEST_SCALE_FREE_MODAL_RATIOS",
-    "TEST_Q_DECAY_PHASE_AND_RINGING",
+    "RECOVER_PUBLISHED_OR_RAW_SPECTRUM_WITHOUT_TARGET_LABEL_BIAS",
+    "RECOVER_TRANSMIT_WAVEFORM_AND_PLATFORM_GEOMETRY_WHERE_AVAILABLE",
+    "CORRECT_CTD_SOUND_SPEED_AND_MULTIPATH",
+    "MEASURE_FUNDAMENTAL_HARMONICS_Q_DECAY_PHASE_AND_IMPULSE_RESPONSE",
+    "FIT_SCALE_FREE_MODAL_RATIOS_BEFORE_ABSOLUTE_HZ",
+    "SEARCH_ORIENTATION_OCCLUSION_BIOFOULING_AND_BURIAL_POSTERIOR",
+    "COMPARE_SEVEN_MANDATORY_CONTROL_CLASSES",
     "TEST_RESPONSE_TO_ACTIVE_INSONIFICATION",
-    "TEST_STATIONARY_GEODETIC_FOCUS",
-    "COMPARE_BIOLOGICAL_GEOLOGICAL_AND_ENGINEERED_CONTROLS",
+    "TEST_STATIONARY_GEODETIC_FOCUS_BY_BACKPROPAGATION",
     "WITHHELD_FORWARD_REPLAY"
   ],
-  "mandatory_controls": [
+  "mandatory_seven_controls": [
     {
+      "rank": 1,
       "id": "ICEBERG_HARMONIC_TREMOR",
-      "known_physics": "natural iceberg contact with seafloor/iceberg produces harmonic tremor",
+      "source_class": "NATURAL_ICE_SEAFLOOR_RESONANT_FALSE_POSITIVE",
+      "known_physics": "iceberg/ice contact can generate harmonic tremor",
       "fundamental_hz": 40,
       "overtone_spacing_hz": 40,
       "reported_max_visible_overtones": 15,
       "near_prior_line_hz": 520,
       "difference_from_model_center_hz": 0.40816326530614333,
       "relative_difference_percent": 0.07843137254902362,
-      "role": "CRITICAL_NATURAL_FALSE_POSITIVE"
+      "role": "CRITICAL_NATURAL_FALSE_POSITIVE_AND_INVERTED_TRIANGULAR_GEOMETRY_CONTROL",
+      "must_test_as_secondary_path": true
     },
     {
-      "id": "ANTARCTIC_MINKE_BIO_DUCK",
-      "fundamental_energy_band_hz": [50, 500],
-      "harmonics_reported_to_hz": 2000,
-      "role": "BIOLOGICAL_REPETITIVE_HARMONIC_FALSE_POSITIVE"
-    },
-    {
+      "rank": 2,
       "id": "SEI_WHALE_MID_FREQUENCY_CALLS",
+      "source_class": "KNOWN_BIOLOGICAL_EMITTER",
       "reported_mid_frequency_band_hz": [200, 600],
       "nominal_prior_overlap": true,
-      "role": "BIOLOGICAL_DIRECT_BAND_OVERLAP_CONTROL"
+      "role": "BIOLOGICAL_DIRECT_BAND_OVERLAP_CONTROL",
+      "must_test_as_secondary_path": true
     },
     {
+      "rank": 3,
+      "id": "ANTARCTIC_MINKE_BIO_DUCK",
+      "source_class": "RESOLVED_BIOLOGICAL_MACHINE_LIKE_HARMONIC_SIGNAL",
+      "fundamental_energy_band_hz": [50, 500],
+      "harmonics_reported_to_hz": 2000,
+      "role": "BIOLOGICAL_REPETITIVE_HARMONIC_FALSE_POSITIVE",
+      "must_test_as_secondary_path": true
+    },
+    {
+      "rank": 4,
       "id": "FISH_SWIMBLADDER_RESONANCE",
+      "source_class": "BIOLOGICAL_GAS_CAVITY_RESONATOR",
       "role": "BIOLOGICAL_CAVITY_RESONANCE_CONTROL",
-      "note": "species, size and depth can place resonances near hundreds of hertz; exact frequency is state dependent"
+      "note": "species, size, pressure and depth can place resonances in the several-hundred-hertz neighborhood",
+      "must_test_as_secondary_path": true
     },
     {
+      "rank": 5,
       "id": "SUBMERGED_ELASTIC_SHELL_RESONANCE",
-      "role": "ENGINEERED_PHYSICS_POSITIVE_CONTROL",
-      "note": "submerged shells can return resonance-rich echoes with ringing and fluid-state-dependent spectra"
+      "source_class": "ENGINEERED_OR_GENERIC_ELASTIC_TARGET",
+      "role": "PHYSICS_POSITIVE_CONTROL_FOR_TRANSFORMED_ECHO",
+      "note": "submerged shells can return resonance-rich echoes with ringing, Q/decay structure and fluid-state-dependent spectra",
+      "must_test_as_secondary_path": true
+    },
+    {
+      "rank": 6,
+      "id": "SURTASS_LFA",
+      "source_class": "MILITARY_ACTIVE_SONAR_ILLUMINATOR",
+      "transmit_band_hz": [100, 500],
+      "gap_to_nominal_prior_low_edge_hz": 11.661807580174923,
+      "role": "ILLUMINATION_CONTEXT_NOT_TARGET_IDENTIFICATION",
+      "hard_rule": "frequency proximity of the transmitter is not evidence of target resonance; recover the actual transmit waveform before interpreting a return"
+    },
+    {
+      "rank": 7,
+      "id": "NOAA_UPSWEEP",
+      "source_class": "UNRESOLVED_LOW_FREQUENCY_OCEAN_SOUND",
+      "published_spectrogram_band_hz": [0, 64],
+      "role": "ABSOLUTE_FREQUENCY_REJECT_CONTROL",
+      "absolute_frequency_gate": "REJECT",
+      "reason": "far below modeled 512-529 Hz flooded prior; retain only as a broad unresolved-ocean-sound control"
     }
   ],
-  "military_illumination_context": {
-    "system": "SURTASS_LFA",
-    "transmit_band_hz": [100, 500],
-    "gap_to_nominal_prior_low_edge_hz": 11.661807580174923,
-    "interpretation": "close illuminator band, not a matching return by itself; a passive linear target does not create absent frequencies without broadband/transient content or nonlinear/time-varying behavior"
+  "orientation_and_condition_axes": {
+    "orientation": ["upright", "inverted_apex_down", "side_resting", "edge_resting", "tilted_partial_burial", "yaw_pitch_roll_search"],
+    "cavity_state": ["sealed_air", "fully_flooded", "partially_flooded", "mixed_air_water_pockets"],
+    "occlusion": ["open", "partially_blocked", "sediment_filled", "calcite_or_mineral_lined"],
+    "biofouling": ["clean", "biofilm", "coral_or_calcareous_encrustation", "sponge_or_soft_growth", "faunal_occupancy"],
+    "effects_to_track": ["mode_shift", "Q_change", "decay_change", "phase_change", "added_mass", "surface_roughness", "aperture_closure", "angle_dependent_target_strength"]
   },
   "watchlist_without_public_numeric_spectrum": [
     "GALLAUDET_1980S_SUBMARINE_SONAR_ACCOUNT",
     "SOVIET_QUACKERS",
     "NUNAVUT_FURY_AND_HECLA_2016_PING"
   ],
-  "reject_as_absolute_frequency_match": [
-    {
-      "id": "NOAA_UPSWEEP",
-      "published_spectrogram_band_hz": [0, 64],
-      "reason": "far below modeled 512-529 Hz neighborhood"
-    }
+  "admission_features": [
+    "repeatable_frequency_ratios",
+    "Q_and_linewidth",
+    "decay_or_ringing",
+    "phase_or_impulse_response",
+    "multi_aspect_orientation_periodicity",
+    "response_to_known_active_ping",
+    "stable_geodetic_location_after_backpropagation",
+    "better_fit_than_all_seven_controls",
+    "independent_pass_or_instrument_replication"
   ],
   "hard_rules": [
     "ONE_520_HZ_PEAK_IS_NOT_A_PYRAMID",
     "POST_HOC_FREQUENCY_OVERLAP_IS_CALIBRATION_NOT_DISCOVERY",
-    "BIOLOGY_AND_ICE_MUST_BE_BEATEN_BEFORE_GEOMETRY_PROMOTION",
+    "ALL_SEVEN_CONTROL_CLASSES_MUST_BE_TESTED",
+    "BIOLOGY_ICE_ELASTIC_TARGETS_AND_TRANSMITTER_WAVEFORMS_MUST_BE_BEATEN_BEFORE_GEOMETRY_PROMOTION",
     "FREQUENCY_RATIOS_Q_DECAY_PHASE_AND_ANGLE_DEPENDENCE_OUTRANK_ABSOLUTE_HZ",
-    "NO_HISTORICAL_CASE_IS_RELABELED_AS_PYRAMID_WITHOUT_RAW_DATA"
-  ]
+    "ORIENTATION_OCCLUSION_BIOFOULING_AND_BURIAL_CANNOT_BE_ASSUMED_CLEAN",
+    "NO_HISTORICAL_CASE_IS_RELABELED_AS_PYRAMID_WITHOUT_RAW_DATA",
+    "WITHHELD_FORWARD_REPLAY_REQUIRED_OR_REJECT"
+  ],
+  "status": "CANONICAL_COUSTEAU_CALIBRATION_RECIPE_V1_1__SEVEN_CONTROLS_FROZEN__COMPOSITE_ECHO_PATHS_ENABLED",
+  "next_gate": "COUSTEAU_SEVEN_CONTROL_COMPOSITE_ECHO_REPLAY_V1"
 }
