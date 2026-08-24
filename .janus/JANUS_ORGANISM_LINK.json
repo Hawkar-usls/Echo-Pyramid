@@ -1,0 +1,16 @@
+{
+  "schema": "janus.organism.member_link.v1",
+  "organism_id": "JANUS_FEDERATED_ORGANISM",
+  "canonical_manifest": "Hawkar-usls/Janus:organism/JANUS_ORGANISM_v1.json",
+  "member_repository": "Hawkar-usls/Echo-Pyramid",
+  "organ_key": "physical_voice",
+  "class": "INTERFACE_PHYSICAL",
+  "role": "PHYSICAL_AUDIO_ACTUATOR",
+  "consumes": ["AUDIO_PCM", "DSP_PROFILE", "BOUNDED_LOCAL_CONTROL"],
+  "emits": ["PHYSICAL_AUDIO_TELEMETRY", "DEVICE_RECEIPT"],
+  "routes_to": ["sensorimotor_mesh", "measurement_bench", "memory"],
+  "authority": "LOCAL_AUDIO_DEVICE_SCOPE",
+  "authority_delta": 0,
+  "cross_repo_write_default": "DENY",
+  "claim_boundary": ["DEVICE_OUTPUT != SCIENTIFIC_CLAIM", "MODEL_BASED_EFFECT != MEASURED_CHAMBER_IR", "AUDIO_CONTINUITY_HAS_PRIORITY_OVER_EFFECT"]
+}
