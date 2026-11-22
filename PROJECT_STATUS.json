@@ -1,0 +1,32 @@
+{
+  "schema_id": "hawkar.project-status.v1",
+  "project": "Echo-Pyramid",
+  "repository": "https://github.com/Hawkar-usls/Echo-Pyramid",
+  "portfolio_class": "embedded_audio_prototype",
+  "last_reviewed": "2026-11-22",
+  "maturity": "ACTIVE_PROTOTYPE",
+  "completion_status": "ENGINEERING_SOURCE_COMPOSITION_AVAILABLE__REAL_DEVICE_PERFORMANCE_HOLD",
+  "summary": "Hardware-facing M5Stack Echo Pyramid/Atom Matrix audio integration, combining separate pinned firmware, audio DSP and controller boundaries.",
+  "implemented": [
+    "Fail-closed swarm firmware composition tooling and SHA receipt",
+    "Pyramid Language v0.3/ESP32-r2 DSP reference and audio owner request mailbox",
+    "Audio-budget dry-bypass guard and local USB depth-control contract"
+  ],
+  "not_established": [
+    "Independent real-device timing margin established by reproducible public hardware measurements",
+    "Production firmware safety, real-time performance across devices or acoustics of ancient chambers",
+    "Independent hardware acceptance from this metadata refresh"
+  ],
+  "flagship_research": false,
+  "source_review": {
+    "scope": "PUBLIC_METADATA_AND_SOURCE_DOCUMENTATION_ONLY",
+    "main_commit_before_metadata_update": "6d8e25e4d79681002add89873c3be56e7a39d290",
+    "canonical_detailed_status": "README.md",
+    "ci_reference": "https://github.com/Hawkar-usls/Echo-Pyramid/actions/workflows/compose-firmware.yml",
+    "independent_external_science_validation": false,
+    "no_runtime_or_model_change": true,
+    "portfolio_reconciliation_pr": "https://github.com/Hawkar-usls/Janus/pull/69"
+  },
+  "visibility_policy": "https://github.com/Hawkar-usls/Janus/blob/main/portfolio-visibility.json",
+  "presentation_standard": "https://github.com/Hawkar-usls/Janus/blob/main/docs/PUBLIC_REPOSITORY_PRESENTATION_STANDARD.md"
+}
